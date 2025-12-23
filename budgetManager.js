@@ -3,12 +3,11 @@ class BudgetManager {
         this.activeBudget = null;
         this.archive = [];
         this.loadFromStorage();
-        this.checkBudgetExpiry();
     }
 
-    // Create new budget
+    // Create new budget - automatically archives current budget
     createBudget(name, startDate, endDate, totalAmount) {
-        // Archive current budget if exists
+        // Archive current budget if exists (even if not expired)
         if (this.activeBudget) {
             this.archiveCurrentBudget();
         }
@@ -51,14 +50,25 @@ class BudgetManager {
     archiveCurrentBudget() {
         if (!this.activeBudget) return null;
         
+        // Calculate final statistics
+        const totalSpent = this.getTotalSpent();
+        const remaining = this.activeBudget.totalBudget - totalSpent;
+        
+        // Get the actual end date (either today or budget's end date, whichever is earlier)
+        const today = new Date().toISOString().split('T')[0];
+        const budgetEndDate = this.activeBudget.endDate;
+        const actualEndDate = today < budgetEndDate ? today : budgetEndDate;
+        
         const endedBudget = {
             ...this.activeBudget,
-            endDate: new Date().toISOString().split('T')[0],
-            totalSpent: this.getTotalSpent(),
-            savings: this.getBudgetSummary().remaining,
-            archivedAt: new Date().toISOString()
+            endDate: actualEndDate, // Use actual end date
+            totalSpent: totalSpent,
+            savings: remaining,
+            archivedAt: new Date().toISOString(),
+            status: today < budgetEndDate ? 'incomplete' : 'completed'
         };
         
+        // Add to archive at the beginning (most recent first)
         this.archive.unshift(endedBudget);
         
         // Keep only last 50 archived budgets
@@ -68,6 +78,11 @@ class BudgetManager {
         
         this.saveToStorage();
         return endedBudget;
+    }
+
+    // Manually archive current budget (for UI)
+    manualArchiveCurrentBudget() {
+        return this.archiveCurrentBudget();
     }
 
     // Add money to budget
@@ -340,15 +355,13 @@ class BudgetManager {
         return transactions.sort((a, b) => b.timestamp - a.timestamp);
     }
 
-    // Check if budget has expired
+    // Check if budget has expired (only for auto-check, not for manual archiving)
     checkBudgetExpiry() {
         if (!this.activeBudget) return false;
         
         const today = new Date().toISOString().split('T')[0];
         if (today > this.activeBudget.endDate) {
-            this.archiveCurrentBudget();
-            this.activeBudget = null;
-            this.saveToStorage();
+            // Don't auto-archive, just notify
             return true;
         }
         return false;
@@ -383,6 +396,37 @@ class BudgetManager {
             biggestExpense,
             transactions: this.getAllTransactions()
         };
+    }
+
+    // Get current budget info for archive confirmation
+    getCurrentBudgetInfo() {
+        if (!this.activeBudget) return null;
+        
+        const summary = this.getBudgetSummary();
+        const totalTransactions = this.activeBudget.transactions?.length || 0;
+        
+        return {
+            name: this.activeBudget.name,
+            startDate: this.activeBudget.startDate,
+            endDate: this.activeBudget.endDate,
+            totalBudget: summary.totalBudget,
+            totalSpent: summary.totalSpent,
+            remaining: summary.remaining,
+            addedMoney: summary.addedMoney,
+            totalTransactions: totalTransactions,
+            daysActive: this.getDaysActive()
+        };
+    }
+
+    // Get days active for current budget
+    getDaysActive() {
+        if (!this.activeBudget) return 0;
+        
+        const start = new Date(this.activeBudget.startDate);
+        const today = new Date();
+        const diffTime = Math.abs(today - start);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays;
     }
 
     // Storage methods

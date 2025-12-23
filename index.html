@@ -194,7 +194,10 @@
                     <label>Total Budget Amount</label>
                     <input type="number" id="budgetAmount" placeholder="₱" step="0.01">
                 </div>
-                <button id="createBudgetBtn" class="btn-primary">Create Budget</button>
+                <div class="modal-actions">
+                    <button id="createBudgetBtn" class="btn-primary">Create New Budget</button>
+                    <button class="btn-secondary close-modal">Cancel</button>
+                </div>
             </div>
         </div>
 
@@ -235,7 +238,10 @@
                     <label>Date</label>
                     <input type="date" id="expenseDate">
                 </div>
-                <button id="saveExpenseBtn" class="btn-primary">Save Expense</button>
+                <div class="modal-actions">
+                    <button id="saveExpenseBtn" class="btn-primary">Save Expense</button>
+                    <button class="btn-secondary close-modal">Cancel</button>
+                </div>
             </div>
         </div>
 
@@ -280,6 +286,7 @@
                 <div class="modal-actions">
                     <button id="updateExpenseBtn" class="btn-primary">Update Expense</button>
                     <button id="deleteExpenseBtn" class="btn-danger">Delete Expense</button>
+                    <button class="btn-secondary close-modal">Cancel</button>
                 </div>
             </div>
         </div>
@@ -303,20 +310,28 @@
                     <label>Date</label>
                     <input type="date" id="moneyDate">
                 </div>
-                <button id="saveMoneyBtn" class="btn-success">Add Money</button>
+                <div class="modal-actions">
+                    <button id="saveMoneyBtn" class="btn-success">Add Money</button>
+                    <button class="btn-secondary close-modal">Cancel</button>
+                </div>
             </div>
         </div>
 
-        <!-- Archive Budget Modal -->
+        <!-- Archive Budget Modal (Changed to Confirmation Modal) -->
         <div id="archiveBudgetModal" class="modal">
             <div class="modal-header">
-                <h3>Archive Budget</h3>
+                <h3>Archive Current Budget</h3>
                 <button class="close-modal">&times;</button>
             </div>
             <div class="modal-body">
-                <p id="archiveMessage">Are you sure you want to archive this budget?</p>
+                <div class="form-group">
+                    <p id="archiveMessage">You're about to create a new budget. The current budget will be archived with all its data.</p>
+                    <p><strong>Current Budget:</strong> <span id="currentBudgetName">None</span></p>
+                    <p><strong>Total Spent:</strong> <span id="currentBudgetSpent">₱0.00</span></p>
+                    <p><strong>Remaining:</strong> <span id="currentBudgetRemaining">₱0.00</span></p>
+                </div>
                 <div class="modal-actions">
-                    <button id="confirmArchiveBtn" class="btn-primary">Yes, Archive</button>
+                    <button id="confirmArchiveBtn" class="btn-primary">Yes, Archive & Create New</button>
                     <button id="cancelArchiveBtn" class="btn-secondary">Cancel</button>
                 </div>
             </div>
@@ -333,6 +348,7 @@
                 <div class="print-actions">
                     <button id="printBtn" class="btn-primary">🖨️ Print</button>
                     <button id="downloadPdfBtn" class="btn-secondary">📥 Download PDF</button>
+                    <button class="btn-secondary close-modal">Close</button>
                 </div>
             </div>
         </div>

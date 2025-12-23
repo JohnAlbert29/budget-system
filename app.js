@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Show welcome message if no budget exists
     if (!budgetManager.activeBudget && budgetManager.archive.length === 0) {
         setTimeout(() => {
-            alert('Welcome to Simple Budget System! 🎉\n\nTo get started:\n1. Click "New Budget" to create your first budget\n2. Add expenses as you spend\n3. Add money when you receive extra funds\n4. Track your spending and savings!');
+            alert('Welcome to Simple Budget System! 🎉\n\nTo get started:\n1. Click "New Budget" to create your first budget\n2. Add expenses as you spend\n3. Add money when you receive extra funds\n4. Track your spending and savings!\n\n💡 Tip: You can create a new budget anytime. The current budget will be archived automatically.');
         }, 1500);
     }
     
@@ -57,12 +57,4 @@ document.addEventListener('DOMContentLoaded', function() {
     setInterval(() => {
         budgetManager.saveToStorage();
     }, 60000);
-    
-    // Check for budget expiry every hour
-    setInterval(() => {
-        if (budgetManager.checkBudgetExpiry()) {
-            uiManager.updateUI();
-            uiManager.showArchivePrompt();
-        }
-    }, 3600000);
 });

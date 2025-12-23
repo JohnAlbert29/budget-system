@@ -135,7 +135,7 @@ class TransactionManager {
         return html;
     }
 
-    // Create archive item HTML
+    // Create archive item HTML with status indicator
     createArchiveItem(budget) {
         const div = document.createElement('div');
         div.className = 'archive-item';
@@ -146,13 +146,17 @@ class TransactionManager {
         const totalBudget = this.formatCurrency(budget.totalBudget);
         const totalSpent = this.formatCurrency(budget.totalSpent || 0);
         const savings = budget.savings ? this.formatCurrency(budget.savings) : this.formatCurrency(0);
+        const status = budget.status === 'completed' ? '✅ Completed' : '⏸️ Incomplete';
+        const transactions = budget.transactions?.length || 0;
         
         div.innerHTML = `
             <h4>${budget.name}</h4>
             <div class="archive-dates">${startDate} - ${endDate}</div>
+            <div class="archive-status">${status}</div>
             <div class="archive-stats">
                 <div>Budget: ${totalBudget}</div>
                 <div>Spent: ${totalSpent}</div>
+                <div>Transactions: ${transactions}</div>
                 <div class="archive-amount">Saved: ${savings}</div>
             </div>
         `;

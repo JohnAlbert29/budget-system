@@ -19,24 +19,46 @@ class UIManager {
         console.log('Initializing event listeners...');
         
         // Check for required elements
-        const requiredElements = [
-            'newBudgetBtn', 'addExpenseBtn', 'addMoneyBtn', 'viewAllTransactionsBtn',
-            'viewArchiveBtn', 'createBudgetBtn', 'saveExpenseBtn', 'saveMoneyBtn',
-            'updateExpenseBtn', 'deleteExpenseBtn', 'confirmArchiveBtn', 'cancelArchiveBtn',
-            'printBtn', 'downloadPdfBtn', 'dailyDatePicker', 'applyDiscount',
-            'editApplyDiscount', 'expenseAmount', 'editExpenseAmount', 'expenseCategory',
-            'editExpenseCategory', 'filterCategory', 'filterDateFrom', 'filterDateTo',
-            'clearFilters'
-        ];
-        
-        // Add event listeners only if elements exist
         try {
-            // New Budget Button
+            // New Budget Button - Show confirmation if current budget exists
             const newBudgetBtn = document.getElementById('newBudgetBtn');
             if (newBudgetBtn) {
                 newBudgetBtn.addEventListener('click', () => {
-                    this.showModal('newBudgetModal');
-                    this.setDefaultDates();
+                    if (this.budgetManager.activeBudget) {
+                        this.showArchiveConfirmation();
+                    } else {
+                        this.showModal('newBudgetModal');
+                        this.setDefaultDates();
+                    }
+                });
+            }
+
+            // Create Budget Button
+            const createBudgetBtn = document.getElementById('createBudgetBtn');
+            if (createBudgetBtn) {
+                createBudgetBtn.addEventListener('click', () => {
+                    this.createNewBudget();
+                });
+            }
+
+            // Confirm Archive Button (for creating new budget)
+            const confirmArchiveBtn = document.getElementById('confirmArchiveBtn');
+            if (confirmArchiveBtn) {
+                confirmArchiveBtn.addEventListener('click', () => {
+                    this.hideAllModals();
+                    // Show new budget modal after archiving
+                    setTimeout(() => {
+                        this.showModal('newBudgetModal');
+                        this.setDefaultDates();
+                    }, 300);
+                });
+            }
+
+            // Cancel Archive Button
+            const cancelArchiveBtn = document.getElementById('cancelArchiveBtn');
+            if (cancelArchiveBtn) {
+                cancelArchiveBtn.addEventListener('click', () => {
+                    this.hideAllModals();
                 });
             }
 
@@ -85,14 +107,6 @@ class UIManager {
                 });
             }
 
-            // Create Budget Button
-            const createBudgetBtn = document.getElementById('createBudgetBtn');
-            if (createBudgetBtn) {
-                createBudgetBtn.addEventListener('click', () => {
-                    this.createNewBudget();
-                });
-            }
-
             // Save Expense Button
             const saveExpenseBtn = document.getElementById('saveExpenseBtn');
             if (saveExpenseBtn) {
@@ -122,22 +136,6 @@ class UIManager {
             if (deleteExpenseBtn) {
                 deleteExpenseBtn.addEventListener('click', () => {
                     this.deleteExpense();
-                });
-            }
-
-            // Confirm Archive Button
-            const confirmArchiveBtn = document.getElementById('confirmArchiveBtn');
-            if (confirmArchiveBtn) {
-                confirmArchiveBtn.addEventListener('click', () => {
-                    this.archiveCurrentBudget();
-                });
-            }
-
-            // Cancel Archive Button
-            const cancelArchiveBtn = document.getElementById('cancelArchiveBtn');
-            if (cancelArchiveBtn) {
-                cancelArchiveBtn.addEventListener('click', () => {
-                    this.hideAllModals();
                 });
             }
 
@@ -364,6 +362,28 @@ class UIManager {
         }
     }
 
+    // Show archive confirmation when creating new budget
+    showArchiveConfirmation() {
+        if (!this.budgetManager.activeBudget) {
+            this.showModal('newBudgetModal');
+            return;
+        }
+        
+        const budgetInfo = this.budgetManager.getCurrentBudgetInfo();
+        if (!budgetInfo) return;
+        
+        // Update confirmation modal with current budget info
+        const currentBudgetName = document.getElementById('currentBudgetName');
+        const currentBudgetSpent = document.getElementById('currentBudgetSpent');
+        const currentBudgetRemaining = document.getElementById('currentBudgetRemaining');
+        
+        if (currentBudgetName) currentBudgetName.textContent = budgetInfo.name;
+        if (currentBudgetSpent) currentBudgetSpent.textContent = this.transactionManager.formatCurrency(budgetInfo.totalSpent);
+        if (currentBudgetRemaining) currentBudgetRemaining.textContent = this.transactionManager.formatCurrency(budgetInfo.remaining);
+        
+        this.showModal('archiveBudgetModal');
+    }
+
     setupDailyDatePicker() {
         const dailyDatePicker = document.getElementById('dailyDatePicker');
         if (dailyDatePicker) {
@@ -541,12 +561,22 @@ class UIManager {
             return;
         }
 
+        // Get current budget info before archiving
+        const currentBudgetName = this.budgetManager.activeBudget?.name;
+        
+        // Create new budget (automatically archives current)
         this.budgetManager.createBudget(name, startDate, endDate, amount);
         this.hideAllModals();
         this.updateUI();
         
         // Show success message
-        alert(`Budget "${name}" created successfully!\nPeriod: ${startDate} to ${endDate}\nTotal: ₱${parseFloat(amount).toFixed(2)}`);
+        let message = `Budget "${name}" created successfully!\nPeriod: ${startDate} to ${endDate}\nTotal: ₱${parseFloat(amount).toFixed(2)}`;
+        
+        if (currentBudgetName) {
+            message += `\n\nPrevious budget "${currentBudgetName}" has been archived.`;
+        }
+        
+        alert(message);
     }
 
     addExpense() {
@@ -684,15 +714,6 @@ class UIManager {
         if (this.budgetManager.deleteTransaction(transactionId)) {
             this.updateUI();
             alert('Transaction deleted successfully!');
-        }
-    }
-
-    archiveCurrentBudget() {
-        const archivedBudget = this.budgetManager.archiveCurrentBudget();
-        if (archivedBudget) {
-            this.hideAllModals();
-            this.updateUI();
-            alert(`Budget "${archivedBudget.name}" has been archived.\nTotal Saved: ₱${archivedBudget.savings?.toFixed(2) || '0.00'}`);
         }
     }
 
@@ -1006,12 +1027,6 @@ class UIManager {
             // Update archive preview
             this.updateArchivePreview();
             
-            // Check if budget should be archived
-            if (this.budgetManager.checkBudgetExpiry()) {
-                setTimeout(() => {
-                    this.showArchivePrompt();
-                }, 1000);
-            }
         } else {
             // Show empty state
             const budgetName = document.getElementById('budgetName');
@@ -1109,14 +1124,5 @@ class UIManager {
             const element = this.transactionManager.createArchiveItem(budget);
             container.appendChild(element);
         });
-    }
-
-    showArchivePrompt() {
-        const archiveMessage = document.getElementById('archiveMessage');
-        if (archiveMessage) {
-            archiveMessage.textContent = 
-                'Your current budget period has ended. Would you like to archive it and create a new one?';
-            this.showModal('archiveBudgetModal');
-        }
     }
 }
