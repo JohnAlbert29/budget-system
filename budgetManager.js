@@ -108,6 +108,9 @@ class BudgetManager {
             actualAmount = actualAmount * 0.5;
             
             // Track LRT savings
+            if (!this.activeBudget.categories.lrt.saved) this.activeBudget.categories.lrt.saved = 0;
+            if (!this.activeBudget.categories.lrt.trips) this.activeBudget.categories.lrt.trips = 0;
+            
             this.activeBudget.categories.lrt.saved += savedAmount;
             this.activeBudget.categories.lrt.trips += 1;
         }
@@ -126,6 +129,12 @@ class BudgetManager {
         };
         
         this.activeBudget.transactions.push(transaction);
+        
+        // Initialize category if it doesn't exist
+        if (!this.activeBudget.categories[category]) {
+            this.activeBudget.categories[category] = { spent: 0, budget: 0 };
+        }
+        
         this.activeBudget.categories[category].spent += actualAmount;
         this.saveToStorage();
         return transaction;
@@ -143,12 +152,18 @@ class BudgetManager {
         const oldTransaction = this.activeBudget.transactions[transactionIndex];
         
         // Remove old amount from category
-        this.activeBudget.categories[oldTransaction.category].spent -= oldTransaction.amount;
+        if (this.activeBudget.categories[oldTransaction.category]) {
+            this.activeBudget.categories[oldTransaction.category].spent -= oldTransaction.amount;
+        }
         
         // Remove LRT savings if applicable
         if (oldTransaction.category === 'lrt' && oldTransaction.savedAmount) {
-            this.activeBudget.categories.lrt.saved -= oldTransaction.savedAmount;
-            this.activeBudget.categories.lrt.trips -= 1;
+            if (this.activeBudget.categories.lrt.saved) {
+                this.activeBudget.categories.lrt.saved -= oldTransaction.savedAmount;
+            }
+            if (this.activeBudget.categories.lrt.trips) {
+                this.activeBudget.categories.lrt.trips -= 1;
+            }
         }
         
         // Prepare new transaction
@@ -162,6 +177,9 @@ class BudgetManager {
             actualAmount = actualAmount * 0.5;
             
             // Add LRT savings
+            if (!this.activeBudget.categories.lrt.saved) this.activeBudget.categories.lrt.saved = 0;
+            if (!this.activeBudget.categories.lrt.trips) this.activeBudget.categories.lrt.trips = 0;
+            
             this.activeBudget.categories.lrt.saved += savedAmount;
             this.activeBudget.categories.lrt.trips += 1;
         }
@@ -180,6 +198,9 @@ class BudgetManager {
         };
         
         // Add new amount to category
+        if (!this.activeBudget.categories[updates.category]) {
+            this.activeBudget.categories[updates.category] = { spent: 0, budget: 0 };
+        }
         this.activeBudget.categories[updates.category].spent += actualAmount;
         
         this.saveToStorage();
@@ -198,12 +219,18 @@ class BudgetManager {
         const transaction = this.activeBudget.transactions[transactionIndex];
         
         // Remove from category spent
-        this.activeBudget.categories[transaction.category].spent -= transaction.amount;
+        if (this.activeBudget.categories[transaction.category]) {
+            this.activeBudget.categories[transaction.category].spent -= transaction.amount;
+        }
         
         // Remove from LRT tracking if applicable
         if (transaction.category === 'lrt' && transaction.savedAmount) {
-            this.activeBudget.categories.lrt.saved -= transaction.savedAmount;
-            this.activeBudget.categories.lrt.trips -= 1;
+            if (this.activeBudget.categories.lrt.saved) {
+                this.activeBudget.categories.lrt.saved -= transaction.savedAmount;
+            }
+            if (this.activeBudget.categories.lrt.trips) {
+                this.activeBudget.categories.lrt.trips -= 1;
+            }
         }
         
         // Remove transaction
@@ -218,7 +245,7 @@ class BudgetManager {
         if (!this.activeBudget) return 0;
         
         return Object.values(this.activeBudget.categories)
-            .reduce((sum, cat) => sum + cat.spent, 0);
+            .reduce((sum, cat) => sum + (cat.spent || 0), 0);
     }
 
     // Get budget summary
@@ -232,7 +259,7 @@ class BudgetManager {
             totalBudget: this.activeBudget.totalBudget,
             totalSpent,
             remaining,
-            addedMoney: this.activeBudget.addedMoney
+            addedMoney: this.activeBudget.addedMoney || 0
         };
     }
 
@@ -246,10 +273,10 @@ class BudgetManager {
             .filter(([name]) => name !== 'added_money')
             .map(([name, data]) => ({
                 name,
-                spent: data.spent,
-                budget: data.budget,
-                remaining: data.budget - data.spent,
-                percentage: totalSpent > 0 ? (data.spent / totalSpent * 100) : 0
+                spent: data.spent || 0,
+                budget: data.budget || 0,
+                remaining: (data.budget || 0) - (data.spent || 0),
+                percentage: totalSpent > 0 ? ((data.spent || 0) / totalSpent * 100) : 0
             }))
             .filter(cat => cat.spent > 0);
     }
@@ -291,7 +318,7 @@ class BudgetManager {
     getAllTransactions(filters = {}) {
         if (!this.activeBudget) return [];
         
-        let transactions = [...this.activeBudget.transactions];
+        let transactions = [...(this.activeBudget.transactions || [])];
         
         // Apply filters
         if (filters.category) {
@@ -360,11 +387,15 @@ class BudgetManager {
 
     // Storage methods
     saveToStorage() {
-        localStorage.setItem('budgetData', JSON.stringify({
-            activeBudget: this.activeBudget,
-            archive: this.archive,
-            version: '1.0'
-        }));
+        try {
+            localStorage.setItem('budgetData', JSON.stringify({
+                activeBudget: this.activeBudget,
+                archive: this.archive,
+                version: '1.0'
+            }));
+        } catch (error) {
+            console.error('Error saving to storage:', error);
+        }
     }
 
     loadFromStorage() {
@@ -376,8 +407,32 @@ class BudgetManager {
                 this.archive = parsed.archive || [];
                 
                 // Initialize missing categories for old data
-                if (this.activeBudget && !this.activeBudget.categories.drinks) {
-                    this.activeBudget.categories.drinks = { budget: 0, spent: 0 };
+                if (this.activeBudget) {
+                    if (!this.activeBudget.categories) {
+                        this.activeBudget.categories = {
+                            transportation: { budget: 0, spent: 0 },
+                            food: { budget: 0, spent: 0 },
+                            lrt: { budget: 0, spent: 0, trips: 0, saved: 0 },
+                            drinks: { budget: 0, spent: 0 },
+                            added_money: { budget: 0, spent: 0 }
+                        };
+                    }
+                    
+                    // Ensure all required categories exist
+                    const requiredCategories = ['transportation', 'food', 'lrt', 'drinks', 'added_money'];
+                    requiredCategories.forEach(cat => {
+                        if (!this.activeBudget.categories[cat]) {
+                            this.activeBudget.categories[cat] = { budget: 0, spent: 0 };
+                        }
+                        if (cat === 'lrt') {
+                            if (typeof this.activeBudget.categories.lrt.saved === 'undefined') {
+                                this.activeBudget.categories.lrt.saved = 0;
+                            }
+                            if (typeof this.activeBudget.categories.lrt.trips === 'undefined') {
+                                this.activeBudget.categories.lrt.trips = 0;
+                            }
+                        }
+                    });
                 }
             }
         } catch (error) {

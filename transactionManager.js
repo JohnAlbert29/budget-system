@@ -1,6 +1,6 @@
 class TransactionManager {
-    constructor(budgetManager) {
-        this.budgetManager = budgetManager;
+    constructor() {
+        // Remove budgetManager dependency
     }
 
     // Format currency
@@ -34,17 +34,15 @@ class TransactionManager {
 
     // Format date for display
     formatDate(dateString) {
+        if (!dateString) return '';
         const date = new Date(dateString);
+        if (isNaN(date.getTime())) return dateString;
+        
         return date.toLocaleDateString('en-PH', {
             month: 'short',
             day: 'numeric',
             year: 'numeric'
         });
-    }
-
-    // Format date for input
-    formatDateForInput(dateString) {
-        return dateString;
     }
 
     // Create transaction HTML element
@@ -88,7 +86,7 @@ class TransactionManager {
 
     // Create daily summary HTML
     createDailySummary(dailyData) {
-        if (dailyData.transactions.length === 0) {
+        if (!dailyData || dailyData.transactions.length === 0) {
             return '<p>No expenses for this day.</p>';
         }
         
@@ -98,7 +96,7 @@ class TransactionManager {
             </div>
         `;
         
-        if (Object.keys(dailyData.categoryBreakdown).length > 0) {
+        if (dailyData.categoryBreakdown && Object.keys(dailyData.categoryBreakdown).length > 0) {
             html += `
                 <div class="daily-categories">
                     <h4>By Category:</h4>
@@ -164,6 +162,10 @@ class TransactionManager {
 
     // Create report HTML
     createReportHTML(reportData, reportType) {
+        if (!reportData) {
+            return '<p>No data available for report</p>';
+        }
+        
         let html = `<div class="print-report">`;
         
         switch (reportType) {
@@ -190,36 +192,38 @@ class TransactionManager {
     createSpendingReport(reportData) {
         return `
             <div class="print-header">
-                <h2>${reportData.budgetName}</h2>
-                <p>${reportData.period}</p>
+                <h2>${reportData.budgetName || 'Budget Report'}</h2>
+                <p>${reportData.period || ''}</p>
             </div>
             <div class="print-stats">
                 <div class="print-stat">
                     <h4>Total Budget</h4>
-                    <p>${this.formatCurrency(reportData.summary.totalBudget)}</p>
+                    <p>${this.formatCurrency(reportData.summary?.totalBudget || 0)}</p>
                 </div>
                 <div class="print-stat">
                     <h4>Total Spent</h4>
-                    <p>${this.formatCurrency(reportData.summary.totalSpent)}</p>
+                    <p>${this.formatCurrency(reportData.summary?.totalSpent || 0)}</p>
                 </div>
                 <div class="print-stat">
                     <h4>Remaining</h4>
-                    <p>${this.formatCurrency(reportData.summary.remaining)}</p>
+                    <p>${this.formatCurrency(reportData.summary?.remaining || 0)}</p>
                 </div>
                 <div class="print-stat">
                     <h4>Added Money</h4>
-                    <p>${this.formatCurrency(reportData.summary.addedMoney)}</p>
+                    <p>${this.formatCurrency(reportData.summary?.addedMoney || 0)}</p>
                 </div>
             </div>
-            <div class="print-categories">
-                <h3>Category Breakdown</h3>
-                ${reportData.categories.map(cat => `
-                    <div class="print-category">
-                        <span>${this.getCategoryName(cat.name)}</span>
-                        <span>${this.formatCurrency(cat.spent)} (${cat.percentage.toFixed(1)}%)</span>
-                    </div>
-                `).join('')}
-            </div>
+            ${reportData.categories && reportData.categories.length > 0 ? `
+                <div class="print-categories">
+                    <h3>Category Breakdown</h3>
+                    ${reportData.categories.map(cat => `
+                        <div class="print-category">
+                            <span>${this.getCategoryName(cat.name)}</span>
+                            <span>${this.formatCurrency(cat.spent)} (${cat.percentage?.toFixed(1) || 0}%)</span>
+                        </div>
+                    `).join('')}
+                </div>
+            ` : ''}
             ${reportData.biggestExpense ? `
                 <div class="print-stat">
                     <h4>Biggest Expense</h4>
@@ -230,26 +234,23 @@ class TransactionManager {
     }
 
     createSavingsReport(reportData) {
-        const savingsRate = ((reportData.summary.remaining / reportData.summary.totalBudget) * 100).toFixed(1);
-        const lrtSavings = reportData.categories.find(cat => cat.name === 'lrt')?.saved || 0;
+        const totalBudget = reportData.summary?.totalBudget || 1;
+        const remaining = reportData.summary?.remaining || 0;
+        const savingsRate = ((remaining / totalBudget) * 100).toFixed(1);
         
         return `
             <div class="print-header">
                 <h2>Savings Report</h2>
-                <p>${reportData.period}</p>
+                <p>${reportData.period || ''}</p>
             </div>
             <div class="print-stats">
                 <div class="print-stat">
                     <h4>Total Savings</h4>
-                    <p>${this.formatCurrency(reportData.summary.remaining)}</p>
+                    <p>${this.formatCurrency(remaining)}</p>
                 </div>
                 <div class="print-stat">
                     <h4>Savings Rate</h4>
                     <p>${savingsRate}%</p>
-                </div>
-                <div class="print-stat">
-                    <h4>LRT Discount Savings</h4>
-                    <p>${this.formatCurrency(lrtSavings)}</p>
                 </div>
             </div>
         `;
@@ -259,18 +260,18 @@ class TransactionManager {
         return `
             <div class="print-header">
                 <h2>Category Report</h2>
-                <p>${reportData.period}</p>
+                <p>${reportData.period || ''}</p>
             </div>
             <div class="print-categories">
                 <h3>Spending by Category</h3>
-                ${reportData.categories.map(cat => `
+                ${reportData.categories ? reportData.categories.map(cat => `
                     <div class="print-category">
                         <span>${this.getCategoryName(cat.name)}</span>
                         <span>${this.formatCurrency(cat.spent)}</span>
-                        <span>${cat.percentage.toFixed(1)}%</span>
-                        <span>Remaining: ${this.formatCurrency(cat.remaining)}</span>
+                        <span>${cat.percentage?.toFixed(1) || 0}%</span>
+                        <span>Remaining: ${this.formatCurrency(cat.remaining || 0)}</span>
                     </div>
-                `).join('')}
+                `).join('') : '<p>No category data</p>'}
             </div>
         `;
     }
@@ -279,44 +280,48 @@ class TransactionManager {
         return `
             <div class="print-header">
                 <h2>Complete Budget Report</h2>
-                <p>${reportData.period}</p>
+                <p>${reportData.period || ''}</p>
             </div>
             <div class="print-stats">
                 <div class="print-stat">
                     <h4>Total Budget</h4>
-                    <p>${this.formatCurrency(reportData.summary.totalBudget)}</p>
+                    <p>${this.formatCurrency(reportData.summary?.totalBudget || 0)}</p>
                 </div>
                 <div class="print-stat">
                     <h4>Total Spent</h4>
-                    <p>${this.formatCurrency(reportData.summary.totalSpent)}</p>
+                    <p>${this.formatCurrency(reportData.summary?.totalSpent || 0)}</p>
                 </div>
                 <div class="print-stat">
                     <h4>Remaining</h4>
-                    <p>${this.formatCurrency(reportData.summary.remaining)}</p>
+                    <p>${this.formatCurrency(reportData.summary?.remaining || 0)}</p>
                 </div>
             </div>
-            <div class="print-categories">
-                <h3>Category Breakdown</h3>
-                ${reportData.categories.map(cat => `
-                    <div class="print-category">
-                        <span>${this.getCategoryName(cat.name)}</span>
-                        <span>${this.formatCurrency(cat.spent)} (${cat.percentage.toFixed(1)}%)</span>
-                    </div>
-                `).join('')}
-            </div>
-            <div class="print-transactions">
-                <h3>All Transactions</h3>
-                ${reportData.transactions.map(t => `
-                    <div class="print-transaction">
-                        <span>${this.formatDate(t.date)}</span>
-                        <span>${this.getCategoryName(t.category)}</span>
-                        <span>${t.description || ''}</span>
-                        <span class="${t.type === 'expense' ? 'negative' : 'positive'}">
-                            ${t.type === 'expense' ? '-' : '+'}${this.formatCurrency(t.amount)}
-                        </span>
-                    </div>
-                `).join('')}
-            </div>
+            ${reportData.categories && reportData.categories.length > 0 ? `
+                <div class="print-categories">
+                    <h3>Category Breakdown</h3>
+                    ${reportData.categories.map(cat => `
+                        <div class="print-category">
+                            <span>${this.getCategoryName(cat.name)}</span>
+                            <span>${this.formatCurrency(cat.spent)} (${cat.percentage?.toFixed(1) || 0}%)</span>
+                        </div>
+                    `).join('')}
+                </div>
+            ` : ''}
+            ${reportData.transactions && reportData.transactions.length > 0 ? `
+                <div class="print-transactions">
+                    <h3>All Transactions</h3>
+                    ${reportData.transactions.map(t => `
+                        <div class="print-transaction">
+                            <span>${this.formatDate(t.date)}</span>
+                            <span>${this.getCategoryName(t.category)}</span>
+                            <span>${t.description || ''}</span>
+                            <span class="${t.type === 'expense' ? 'negative' : 'positive'}">
+                                ${t.type === 'expense' ? '-' : '+'}${this.formatCurrency(t.amount)}
+                            </span>
+                        </div>
+                    `).join('')}
+                </div>
+            ` : ''}
         `;
     }
 }

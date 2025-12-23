@@ -5,21 +5,21 @@ class ChartManager {
 
     // Initialize chart
     initializeChart(canvasId) {
-        const ctx = document.getElementById(canvasId).getContext('2d');
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) {
+            console.error('Canvas element not found:', canvasId);
+            return;
+        }
+        
+        const ctx = canvas.getContext('2d');
         
         this.chart = new Chart(ctx, {
             type: 'doughnut',
             data: {
-                labels: [],
+                labels: ['No Data'],
                 datasets: [{
-                    data: [],
-                    backgroundColor: [
-                        '#4f46e5', // Transportation
-                        '#10b981', // Food
-                        '#f59e0b', // LRT
-                        '#ec4899', // Drinks
-                        '#ef4444'  // Other
-                    ],
+                    data: [100],
+                    backgroundColor: ['#e5e7eb'],
                     borderWidth: 1,
                     borderColor: '#fff'
                 }]
@@ -47,14 +47,6 @@ class ChartManager {
                             }
                         }
                     }
-                },
-                onClick: (evt, elements) => {
-                    if (elements.length > 0) {
-                        const index = elements[0].index;
-                        const label = this.chart.data.labels[index];
-                        // You can add click functionality here
-                        console.log(`Clicked on: ${label}`);
-                    }
                 }
             }
         });
@@ -62,7 +54,18 @@ class ChartManager {
 
     // Update chart with data
     updateChart(categoryBreakdown) {
-        if (!this.chart) return;
+        if (!this.chart) {
+            console.error('Chart not initialized');
+            return;
+        }
+        
+        if (!categoryBreakdown || categoryBreakdown.length === 0) {
+            this.chart.data.labels = ['No Expenses'];
+            this.chart.data.datasets[0].data = [100];
+            this.chart.data.datasets[0].backgroundColor = ['#e5e7eb'];
+            this.chart.update();
+            return;
+        }
         
         const labels = categoryBreakdown.map(cat => {
             const names = {
@@ -84,18 +87,17 @@ class ChartManager {
         this.chart.data.labels = labels;
         this.chart.data.datasets[0].data = data;
         
-        // Highlight biggest expense
+        // Set colors
+        const backgroundColors = labels.map((label, index) => {
+            return this.getBaseColor(index);
+        });
+        
+        // Highlight biggest
         if (biggestIndex !== -1) {
-            const backgroundColors = [...this.chart.data.datasets[0].backgroundColor];
-            // Reset all colors
-            backgroundColors.forEach((color, i) => {
-                backgroundColors[i] = this.getBaseColor(i);
-            });
-            // Highlight biggest
             backgroundColors[biggestIndex] = '#ef4444';
-            this.chart.data.datasets[0].backgroundColor = backgroundColors;
         }
         
+        this.chart.data.datasets[0].backgroundColor = backgroundColors;
         this.chart.update();
     }
 
