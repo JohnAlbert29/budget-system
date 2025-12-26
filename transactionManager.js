@@ -15,6 +15,7 @@ class TransactionManager {
             food: '🍔',
             lrt: '🚆',
             drinks: '🥤',
+            others: '📦',
             added_money: '💰'
         };
         return icons[category] || '📝';
@@ -27,6 +28,7 @@ class TransactionManager {
             food: 'Food',
             lrt: 'LRT Fare',
             drinks: 'Drinks',
+            others: 'Others',
             added_money: 'Added Money'
         };
         return names[category] || category;
@@ -273,7 +275,6 @@ class TransactionManager {
                         <span>${this.getCategoryName(cat.name)}</span>
                         <span>${this.formatCurrency(cat.spent)}</span>
                         <span>${cat.percentage?.toFixed(1) || 0}%</span>
-                        <span>Remaining: ${this.formatCurrency(cat.remaining || 0)}</span>
                     </div>
                 `).join('') : '<p>No category data</p>'}
             </div>

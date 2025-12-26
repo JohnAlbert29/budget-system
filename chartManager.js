@@ -72,7 +72,8 @@ class ChartManager {
                 transportation: 'Transportation',
                 food: 'Food',
                 lrt: 'LRT Fare',
-                drinks: 'Drinks'
+                drinks: 'Drinks',
+                others: 'Others'
             };
             return names[cat.name] || cat.name;
         });
@@ -108,7 +109,8 @@ class ChartManager {
             '#10b981', // Food
             '#f59e0b', // LRT
             '#ec4899', // Drinks
-            '#6b7280'  // Other
+            '#6b7280', // Others
+            '#8b5cf6'  // Extra color
         ];
         return colors[index] || colors[colors.length - 1];
     }
@@ -123,13 +125,13 @@ class ChartManager {
             transportation: 'Transportation',
             food: 'Food',
             lrt: 'LRT Fare',
-            drinks: 'Drinks'
+            drinks: 'Drinks',
+            others: 'Others'
         };
         
         const name = categoryNames[biggestExpense.name] || biggestExpense.name;
         const amount = `₱${biggestExpense.spent.toFixed(2)}`;
         const percentage = `${biggestExpense.percentage.toFixed(1)}%`;
-        const remaining = `₱${biggestExpense.remaining.toFixed(2)}`;
         
         return `
             <div class="highlight-content">
@@ -137,13 +139,13 @@ class ChartManager {
                     <span class="highlight-icon">${
                         biggestExpense.name === 'transportation' ? '🚗' :
                         biggestExpense.name === 'food' ? '🍔' :
-                        biggestExpense.name === 'lrt' ? '🚆' : '🥤'
+                        biggestExpense.name === 'lrt' ? '🚆' :
+                        biggestExpense.name === 'drinks' ? '🥤' : '📦'
                     }</span>
                     <span class="highlight-name">${name}</span>
                 </div>
                 <div class="highlight-amount">${amount}</div>
                 <div class="highlight-percentage">${percentage} of total spending</div>
-                <div class="highlight-percentage">Remaining: ${remaining}</div>
             </div>
         `;
     }

@@ -20,6 +20,22 @@ class UIManager {
         
         // Check for required elements
         try {
+            // Export Data Button
+            const exportDataBtn = document.getElementById('exportDataBtn');
+            if (exportDataBtn) {
+                exportDataBtn.addEventListener('click', () => {
+                    this.showExportData();
+                });
+            }
+
+            // Import Data Button
+            const importDataBtn = document.getElementById('importDataBtn');
+            if (importDataBtn) {
+                importDataBtn.addEventListener('click', () => {
+                    this.showImportData();
+                });
+            }
+
             // New Budget Button - Show confirmation if current budget exists
             const newBudgetBtn = document.getElementById('newBudgetBtn');
             if (newBudgetBtn) {
@@ -136,6 +152,30 @@ class UIManager {
             if (deleteExpenseBtn) {
                 deleteExpenseBtn.addEventListener('click', () => {
                     this.deleteExpense();
+                });
+            }
+
+            // Copy Data Button
+            const copyDataBtn = document.getElementById('copyDataBtn');
+            if (copyDataBtn) {
+                copyDataBtn.addEventListener('click', () => {
+                    this.copyDataToClipboard();
+                });
+            }
+
+            // Download Data Button
+            const downloadDataBtn = document.getElementById('downloadDataBtn');
+            if (downloadDataBtn) {
+                downloadDataBtn.addEventListener('click', () => {
+                    this.downloadDataAsFile();
+                });
+            }
+
+            // Confirm Import Button
+            const confirmImportBtn = document.getElementById('confirmImportBtn');
+            if (confirmImportBtn) {
+                confirmImportBtn.addEventListener('click', () => {
+                    this.importData();
                 });
             }
 
@@ -359,6 +399,96 @@ class UIManager {
             console.log('Event listeners initialized successfully');
         } catch (error) {
             console.error('Error initializing event listeners:', error);
+        }
+    }
+
+    // Export/Import functionality
+    showExportData() {
+        const dataModalTitle = document.getElementById('dataModalTitle');
+        const exportSection = document.getElementById('exportSection');
+        const importSection = document.getElementById('importSection');
+        const exportDataText = document.getElementById('exportDataText');
+        
+        if (dataModalTitle) dataModalTitle.textContent = 'Export Data';
+        if (exportSection) exportSection.style.display = 'block';
+        if (importSection) importSection.style.display = 'none';
+        
+        // Get export data
+        const exportData = this.budgetManager.exportData();
+        if (exportDataText) exportDataText.value = exportData;
+        
+        this.showModal('dataModal');
+    }
+
+    showImportData() {
+        const dataModalTitle = document.getElementById('dataModalTitle');
+        const exportSection = document.getElementById('exportSection');
+        const importSection = document.getElementById('importSection');
+        const importDataText = document.getElementById('importDataText');
+        
+        if (dataModalTitle) dataModalTitle.textContent = 'Import Data';
+        if (exportSection) exportSection.style.display = 'none';
+        if (importSection) importSection.style.display = 'block';
+        if (importDataText) importDataText.value = '';
+        
+        this.showModal('dataModal');
+    }
+
+    copyDataToClipboard() {
+        const exportDataText = document.getElementById('exportDataText');
+        if (!exportDataText) return;
+        
+        exportDataText.select();
+        exportDataText.setSelectionRange(0, 99999); // For mobile devices
+        
+        try {
+            navigator.clipboard.writeText(exportDataText.value).then(() => {
+                alert('Data copied to clipboard! You can now paste it in another device.');
+            }).catch(err => {
+                // Fallback for older browsers
+                document.execCommand('copy');
+                alert('Data copied to clipboard! You can now paste it in another device.');
+            });
+        } catch (err) {
+            alert('Failed to copy data. Please select and copy the text manually.');
+        }
+    }
+
+    downloadDataAsFile() {
+        const exportDataText = document.getElementById('exportDataText');
+        if (!exportDataText) return;
+        
+        const data = exportDataText.value;
+        const blob = new Blob([data], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `budget-backup-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        alert('Data downloaded as file! You can import this file on another device.');
+    }
+
+    importData() {
+        const importDataText = document.getElementById('importDataText');
+        if (!importDataText || !importDataText.value.trim()) {
+            alert('Please paste your exported data');
+            return;
+        }
+        
+        if (!confirm('⚠️ Warning: This will replace ALL current data. Are you sure?')) {
+            return;
+        }
+        
+        const success = this.budgetManager.importData(importDataText.value);
+        if (success) {
+            this.hideAllModals();
+            this.updateUI();
+            alert('Data imported successfully!');
         }
     }
 
@@ -860,8 +990,6 @@ class UIManager {
                 .map(([name, data]) => ({
                     name,
                     spent: data.spent || 0,
-                    budget: data.budget || 0,
-                    remaining: (data.budget || 0) - (data.spent || 0),
                     percentage: (budget.totalSpent || 0) > 0 ? 
                         ((data.spent || 0) / (budget.totalSpent || 0) * 100) : 0
                 }))
@@ -966,7 +1094,8 @@ class UIManager {
             'transportation': 'transportation',
             'food': 'food',
             'lrt fare': 'lrt',
-            'drinks': 'drinks'
+            'drinks': 'drinks',
+            'others': 'others'
         };
         
         const categoryValue = categoryMap[categoryName.toLowerCase()];
@@ -1064,11 +1193,11 @@ class UIManager {
         breakdown.forEach(cat => {
             const icon = cat.name === 'transportation' ? '🚗' : 
                         cat.name === 'food' ? '🍔' : 
-                        cat.name === 'lrt' ? '🚆' : '🥤';
+                        cat.name === 'lrt' ? '🚆' : 
+                        cat.name === 'drinks' ? '🥤' : '📦';
             const name = this.transactionManager.getCategoryName(cat.name);
             const spent = this.transactionManager.formatCurrency(cat.spent);
             const percentage = `${cat.percentage.toFixed(1)}%`;
-            const remaining = this.transactionManager.formatCurrency(cat.remaining);
             
             const biggest = this.budgetManager.getBiggestExpense();
             const isHighlight = biggest && cat.name === biggest.name;
@@ -1081,7 +1210,7 @@ class UIManager {
                     </div>
                     <div>
                         <div class="category-amount">${spent}</div>
-                        <div class="category-percentage">${percentage} • Remaining: ${remaining}</div>
+                        <div class="category-percentage">${percentage}</div>
                     </div>
                 </div>
             `;

@@ -20,30 +20,19 @@ class BudgetManager {
             totalBudget: parseFloat(totalAmount),
             addedMoney: 0,
             categories: {
-                transportation: { budget: 0, spent: 0 },
-                food: { budget: 0, spent: 0 },
-                lrt: { budget: 0, spent: 0, trips: 0, saved: 0 },
-                drinks: { budget: 0, spent: 0 },
-                added_money: { budget: 0, spent: 0 }
+                transportation: { spent: 0 },
+                food: { spent: 0 },
+                lrt: { spent: 0, trips: 0, saved: 0 },
+                drinks: { spent: 0 },
+                others: { spent: 0 },
+                added_money: { spent: 0 }
             },
             transactions: []
         };
 
-        // Auto-allocate budgets
-        this.allocateDefaultBudgets(budget);
-        
         this.activeBudget = budget;
         this.saveToStorage();
         return budget;
-    }
-
-    allocateDefaultBudgets(budget) {
-        const total = budget.totalBudget;
-        budget.categories.transportation.budget = total * 0.2; // 20%
-        budget.categories.food.budget = total * 0.3; // 30%
-        budget.categories.lrt.budget = total * 0.15; // 15%
-        budget.categories.drinks.budget = total * 0.1; // 10%
-        // Remaining 25% stays as buffer
     }
 
     // Archive current budget
@@ -147,7 +136,7 @@ class BudgetManager {
         
         // Initialize category if it doesn't exist
         if (!this.activeBudget.categories[category]) {
-            this.activeBudget.categories[category] = { spent: 0, budget: 0 };
+            this.activeBudget.categories[category] = { spent: 0 };
         }
         
         this.activeBudget.categories[category].spent += actualAmount;
@@ -214,7 +203,7 @@ class BudgetManager {
         
         // Add new amount to category
         if (!this.activeBudget.categories[updates.category]) {
-            this.activeBudget.categories[updates.category] = { spent: 0, budget: 0 };
+            this.activeBudget.categories[updates.category] = { spent: 0 };
         }
         this.activeBudget.categories[updates.category].spent += actualAmount;
         
@@ -260,6 +249,7 @@ class BudgetManager {
         if (!this.activeBudget) return 0;
         
         return Object.values(this.activeBudget.categories)
+            .filter(cat => cat.spent) // Only include categories with spending
             .reduce((sum, cat) => sum + (cat.spent || 0), 0);
     }
 
@@ -289,8 +279,6 @@ class BudgetManager {
             .map(([name, data]) => ({
                 name,
                 spent: data.spent || 0,
-                budget: data.budget || 0,
-                remaining: (data.budget || 0) - (data.spent || 0),
                 percentage: totalSpent > 0 ? ((data.spent || 0) / totalSpent * 100) : 0
             }))
             .filter(cat => cat.spent > 0);
@@ -435,7 +423,7 @@ class BudgetManager {
             localStorage.setItem('budgetData', JSON.stringify({
                 activeBudget: this.activeBudget,
                 archive: this.archive,
-                version: '1.0'
+                version: '2.0' // Updated version for new format
             }));
         } catch (error) {
             console.error('Error saving to storage:', error);
@@ -454,19 +442,20 @@ class BudgetManager {
                 if (this.activeBudget) {
                     if (!this.activeBudget.categories) {
                         this.activeBudget.categories = {
-                            transportation: { budget: 0, spent: 0 },
-                            food: { budget: 0, spent: 0 },
-                            lrt: { budget: 0, spent: 0, trips: 0, saved: 0 },
-                            drinks: { budget: 0, spent: 0 },
-                            added_money: { budget: 0, spent: 0 }
+                            transportation: { spent: 0 },
+                            food: { spent: 0 },
+                            lrt: { spent: 0, trips: 0, saved: 0 },
+                            drinks: { spent: 0 },
+                            others: { spent: 0 },
+                            added_money: { spent: 0 }
                         };
                     }
                     
                     // Ensure all required categories exist
-                    const requiredCategories = ['transportation', 'food', 'lrt', 'drinks', 'added_money'];
+                    const requiredCategories = ['transportation', 'food', 'lrt', 'drinks', 'others', 'added_money'];
                     requiredCategories.forEach(cat => {
                         if (!this.activeBudget.categories[cat]) {
-                            this.activeBudget.categories[cat] = { budget: 0, spent: 0 };
+                            this.activeBudget.categories[cat] = { spent: 0 };
                         }
                         if (cat === 'lrt') {
                             if (typeof this.activeBudget.categories.lrt.saved === 'undefined') {
@@ -477,7 +466,35 @@ class BudgetManager {
                             }
                         }
                     });
+                    
+                    // Remove old budget field if exists (migration from v1.0)
+                    Object.values(this.activeBudget.categories).forEach(cat => {
+                        if (cat.budget !== undefined) {
+                            delete cat.budget;
+                        }
+                    });
                 }
+                
+                // Migrate archive data
+                this.archive.forEach(budget => {
+                    if (!budget.categories) {
+                        budget.categories = {
+                            transportation: { spent: 0 },
+                            food: { spent: 0 },
+                            lrt: { spent: 0, trips: 0, saved: 0 },
+                            drinks: { spent: 0 },
+                            others: { spent: 0 },
+                            added_money: { spent: 0 }
+                        };
+                    }
+                    
+                    // Remove old budget field from archived budgets
+                    Object.values(budget.categories).forEach(cat => {
+                        if (cat.budget !== undefined) {
+                            delete cat.budget;
+                        }
+                    });
+                });
             }
         } catch (error) {
             console.error('Error loading from storage:', error);
@@ -500,7 +517,8 @@ class BudgetManager {
         return JSON.stringify({
             activeBudget: this.activeBudget,
             archive: this.archive,
-            exportDate: new Date().toISOString()
+            exportDate: new Date().toISOString(),
+            version: '2.0'
         }, null, 2);
     }
 
@@ -508,12 +526,51 @@ class BudgetManager {
     importData(data) {
         try {
             const parsed = JSON.parse(data);
+            
+            // Validate data structure
+            if (!parsed.activeBudget && !parsed.archive) {
+                throw new Error('Invalid data format');
+            }
+            
+            // Clear current data
+            this.activeBudget = null;
+            this.archive = [];
+            
+            // Import data
             this.activeBudget = parsed.activeBudget;
             this.archive = parsed.archive || [];
+            
+            // Ensure categories structure
+            if (this.activeBudget) {
+                if (!this.activeBudget.categories) {
+                    this.activeBudget.categories = {
+                        transportation: { spent: 0 },
+                        food: { spent: 0 },
+                        lrt: { spent: 0, trips: 0, saved: 0 },
+                        drinks: { spent: 0 },
+                        others: { spent: 0 },
+                        added_money: { spent: 0 }
+                    };
+                }
+                
+                // Ensure others category exists
+                if (!this.activeBudget.categories.others) {
+                    this.activeBudget.categories.others = { spent: 0 };
+                }
+                
+                // Remove old budget field if exists
+                Object.values(this.activeBudget.categories).forEach(cat => {
+                    if (cat.budget !== undefined) {
+                        delete cat.budget;
+                    }
+                });
+            }
+            
             this.saveToStorage();
             return true;
         } catch (error) {
             console.error('Error importing data:', error);
+            alert(`Error importing data: ${error.message}`);
             return false;
         }
     }

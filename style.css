@@ -32,6 +32,11 @@ body {
     font-weight: 600;
 }
 
+.header-actions {
+    display: flex;
+    gap: 10px;
+}
+
 /* Buttons */
 .btn-primary {
     background: #4f46e5;
@@ -464,6 +469,11 @@ body {
     font-size: 1.2rem;
 }
 
+.transaction-details {
+    display: flex;
+    flex-direction: column;
+}
+
 .transaction-details h4 {
     font-size: 1rem;
     margin-bottom: 2px;
@@ -564,6 +574,15 @@ body {
     margin-bottom: 10px;
 }
 
+.archive-status {
+    font-size: 0.8rem;
+    padding: 2px 8px;
+    background: #e5e7eb;
+    border-radius: 4px;
+    display: inline-block;
+    margin-bottom: 10px;
+}
+
 .archive-amount {
     font-weight: 600;
     color: #10b981;
@@ -573,6 +592,19 @@ body {
     margin-top: 10px;
     font-size: 0.9rem;
     color: #6b7280;
+}
+
+.archive-stats-summary {
+    background: #f0f9ff;
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    border: 1px solid #bae6fd;
+}
+
+.archive-stats-summary h3 {
+    margin-bottom: 10px;
+    color: #0369a1;
 }
 
 /* Bottom Navigation */
@@ -701,7 +733,8 @@ body {
 }
 
 .form-group input,
-.form-group select {
+.form-group select,
+.form-group textarea {
     width: 100%;
     padding: 10px;
     border: 1px solid #d1d5db;
@@ -711,7 +744,8 @@ body {
 }
 
 .form-group input:focus,
-.form-group select:focus {
+.form-group select:focus,
+.form-group textarea:focus {
     outline: none;
     border-color: #4f46e5;
     box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
@@ -728,6 +762,15 @@ body {
 .discount-info p {
     margin: 5px 0;
     color: #0369a1;
+}
+
+.warning-message {
+    background: #fef3c7;
+    border: 1px solid #f59e0b;
+    color: #92400e;
+    padding: 10px;
+    border-radius: 6px;
+    margin-bottom: 20px;
 }
 
 .modal-actions {
@@ -839,6 +882,17 @@ body {
 
 /* Responsive */
 @media (max-width: 640px) {
+    .header {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+    
+    .header-actions {
+        width: 100%;
+        justify-content: center;
+    }
+    
     .charts-section {
         grid-template-columns: 1fr;
     }
