@@ -12,11 +12,7 @@
         <!-- Header -->
         <header class="header">
             <h1>💰 Simple Budget</h1>
-            <div class="header-actions">
-                <button id="exportDataBtn" class="btn-secondary">Export Data</button>
-                <button id="importDataBtn" class="btn-secondary">Import Data</button>
-                <button id="newBudgetBtn" class="btn-secondary">New Budget</button>
-            </div>
+            <button id="newBudgetBtn" class="btn-secondary">New Budget</button>
         </header>
 
         <!-- Main Content -->
@@ -116,7 +112,6 @@
                         <option value="food">Food</option>
                         <option value="lrt">LRT Fare</option>
                         <option value="drinks">Drinks</option>
-                        <option value="others">Others</option>
                         <option value="added_money">Added Money</option>
                     </select>
                     <input type="date" id="filterDateFrom" placeholder="From">
@@ -224,7 +219,6 @@
                         <option value="food">🍔 Food</option>
                         <option value="lrt">🚆 LRT Fare</option>
                         <option value="drinks">🥤 Drinks</option>
-                        <option value="others">📦 Others</option>
                     </select>
                 </div>
                 <div class="form-group" id="lrtDiscountGroup" style="display: none;">
@@ -270,7 +264,6 @@
                         <option value="food">🍔 Food</option>
                         <option value="lrt">🚆 LRT Fare</option>
                         <option value="drinks">🥤 Drinks</option>
-                        <option value="others">📦 Others</option>
                     </select>
                 </div>
                 <div class="form-group" id="editLrtDiscountGroup" style="display: none;">
@@ -324,7 +317,7 @@
             </div>
         </div>
 
-        <!-- Archive Budget Modal -->
+        <!-- Archive Budget Modal (Changed to Confirmation Modal) -->
         <div id="archiveBudgetModal" class="modal">
             <div class="modal-header">
                 <h3>Archive Current Budget</h3>
@@ -340,39 +333,6 @@
                 <div class="modal-actions">
                     <button id="confirmArchiveBtn" class="btn-primary">Yes, Archive & Create New</button>
                     <button id="cancelArchiveBtn" class="btn-secondary">Cancel</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Export/Import Modal -->
-        <div id="dataModal" class="modal">
-            <div class="modal-header">
-                <h3 id="dataModalTitle">Export/Import Data</h3>
-                <button class="close-modal">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div id="exportSection" style="display: none;">
-                    <div class="form-group">
-                        <label>Your Data (Copy this text):</label>
-                        <textarea id="exportDataText" rows="10" readonly style="width: 100%; font-family: monospace;"></textarea>
-                    </div>
-                    <div class="modal-actions">
-                        <button id="copyDataBtn" class="btn-primary">📋 Copy to Clipboard</button>
-                        <button id="downloadDataBtn" class="btn-secondary">📥 Download as File</button>
-                    </div>
-                </div>
-                <div id="importSection" style="display: none;">
-                    <div class="form-group">
-                        <label>Paste your exported data:</label>
-                        <textarea id="importDataText" rows="10" placeholder="Paste your exported data here..." style="width: 100%; font-family: monospace;"></textarea>
-                    </div>
-                    <div class="warning-message">
-                        ⚠️ Warning: Importing data will replace all current data!
-                    </div>
-                    <div class="modal-actions">
-                        <button id="confirmImportBtn" class="btn-primary">Import Data</button>
-                        <button class="btn-secondary close-modal">Cancel</button>
-                    </div>
                 </div>
             </div>
         </div>
