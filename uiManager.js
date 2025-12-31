@@ -550,6 +550,9 @@ class UIManager {
             if (this.currentScreen === 'archive') {
                 this.loadFullArchive();
             }
+            
+            // Refresh the manage archive modal if it's open
+            this.showManageArchive();
         } else {
             alert('Failed to update archive title');
         }
@@ -593,7 +596,8 @@ class UIManager {
     deleteArchive() {
         const archiveId = parseInt(document.getElementById('deleteArchiveId')?.value || '0');
         
-        if (!confirm('⚠️ Final Warning: This will permanently delete this archive. Are you absolutely sure?')) {
+        // Show final confirmation
+        if (!confirm('⚠️ FINAL WARNING: This will permanently delete this archive. This action cannot be undone. Are you absolutely sure?')) {
             return;
         }
         
@@ -607,6 +611,11 @@ class UIManager {
             if (this.currentScreen === 'archive') {
                 this.loadFullArchive();
             }
+            
+            // Refresh the manage archive modal
+            setTimeout(() => {
+                this.showManageArchive();
+            }, 500);
         } else {
             alert('Failed to delete archive');
         }
