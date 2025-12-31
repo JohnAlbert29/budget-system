@@ -2,157 +2,317 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Budget System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>💰 Budget Tracker</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="manifest" href="manifest.json">
 </head>
 <body>
-    <div class="container">
+    <!-- App Container -->
+    <div class="app-container">
         <!-- Header -->
-        <header class="header">
-            <h1>💰 Simple Budget</h1>
-            <div class="header-actions">
-                <button id="exportDataBtn" class="btn-secondary">Export Data</button>
-                <button id="importDataBtn" class="btn-secondary">Import Data</button>
-                <button id="newBudgetBtn" class="btn-secondary">New Budget</button>
+        <header class="app-header">
+            <div class="header-left">
+                <button class="menu-btn" id="menuBtn">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h1>💰 Budget</h1>
+            </div>
+            <div class="header-right">
+                <button class="icon-btn" id="addMoneyQuickBtn" title="Add Money">
+                    <i class="fas fa-plus-circle"></i>
+                </button>
+                <button class="icon-btn" id="exportBtn" title="Export">
+                    <i class="fas fa-download"></i>
+                </button>
             </div>
         </header>
+
+        <!-- Side Menu -->
+        <div class="side-menu" id="sideMenu">
+            <div class="menu-header">
+                <h2>Menu</h2>
+                <button class="close-menu" id="closeMenuBtn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="menu-items">
+                <a href="#" class="menu-item active" data-screen="dashboard">
+                    <i class="fas fa-chart-pie"></i>
+                    Dashboard
+                </a>
+                <a href="#" class="menu-item" data-screen="transactions">
+                    <i class="fas fa-exchange-alt"></i>
+                    Transactions
+                </a>
+                <a href="#" class="menu-item" data-screen="reports">
+                    <i class="fas fa-chart-line"></i>
+                    Reports
+                </a>
+                <a href="#" class="menu-item" data-screen="archive">
+                    <i class="fas fa-archive"></i>
+                    Archive
+                </a>
+                <a href="#" class="menu-item" id="newBudgetMenuBtn">
+                    <i class="fas fa-file-alt"></i>
+                    New Budget
+                </a>
+                <a href="#" class="menu-item" id="importMenuBtn">
+                    <i class="fas fa-upload"></i>
+                    Import Data
+                </a>
+                <div class="menu-divider"></div>
+                <div class="budget-status">
+                    <h3>Current Budget</h3>
+                    <p id="menuBudgetName">No active budget</p>
+                    <p id="menuBudgetDates" class="date-text"></p>
+                </div>
+            </div>
+        </div>
 
         <!-- Main Content -->
         <main class="main-content" id="mainContent">
             <!-- Dashboard Screen -->
             <div id="dashboardScreen" class="screen active">
-                <!-- Current Budget Card -->
-                <section id="currentBudget" class="budget-card">
-                    <h2>Current Budget</h2>
-                    <div class="budget-info">
-                        <div class="budget-header">
-                            <h3 id="budgetName">No Active Budget</h3>
-                            <span id="budgetDates" class="date-range"></span>
+                <!-- Budget Summary Card -->
+                <div class="budget-summary-card">
+                    <div class="summary-header">
+                        <h2 id="currentBudgetName">No Active Budget</h2>
+                        <span id="currentBudgetDates" class="date-text">-</span>
+                    </div>
+                    <div class="progress-container">
+                        <div class="progress-bar" id="spendingProgress">
+                            <div class="progress-fill"></div>
                         </div>
-                        
-                        <div class="budget-stats">
-                            <div class="stat">
-                                <span class="stat-label">Total Budget</span>
-                                <span id="totalBudget" class="stat-value">₱0</span>
-                            </div>
-                            <div class="stat">
-                                <span class="stat-label">Spent</span>
-                                <span id="totalSpent" class="stat-value">₱0</span>
-                            </div>
-                            <div class="stat">
-                                <span class="stat-label">Remaining</span>
-                                <span id="totalRemaining" class="stat-value">₱0</span>
-                            </div>
-                        </div>
-
-                        <div class="category-summary">
-                            <p>Create a budget to get started!</p>
-                        </div>
-
-                        <div class="action-buttons">
-                            <button id="addExpenseBtn" class="btn-primary">+ Add Expense</button>
-                            <button id="addMoneyBtn" class="btn-success">+ Add Money</button>
+                        <div class="progress-labels">
+                            <span>Spent</span>
+                            <span id="progressPercentage">0%</span>
+                            <span>Budget</span>
                         </div>
                     </div>
-                </section>
+                    <div class="summary-numbers">
+                        <div class="summary-item">
+                            <span class="label">Total</span>
+                            <span class="value" id="summaryTotal">₱0.00</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="label">Spent</span>
+                            <span class="value negative" id="summarySpent">₱0.00</span>
+                        </div>
+                        <div class="summary-item highlight">
+                            <span class="label">Left</span>
+                            <span class="value positive" id="summaryLeft">₱0.00</span>
+                        </div>
+                    </div>
+                    <div class="summary-actions">
+                        <button class="action-btn primary" id="addExpenseQuickBtn">
+                            <i class="fas fa-minus-circle"></i>
+                            Add Expense
+                        </button>
+                        <button class="action-btn success" id="addMoneyBtn">
+                            <i class="fas fa-plus-circle"></i>
+                            Add Money
+                        </button>
+                    </div>
+                </div>
 
                 <!-- Charts Section -->
-                <section class="charts-section">
-                    <div class="chart-container">
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <h3>Spending Breakdown</h3>
+                        <button class="icon-btn small" id="refreshChart">
+                            <i class="fas fa-redo"></i>
+                        </button>
+                    </div>
+                    <div class="chart-wrapper">
                         <canvas id="spendingChart"></canvas>
                     </div>
-                    <div id="biggestExpense" class="highlight-card">
-                        <h3>💰 Biggest Expense</h3>
-                        <p>Loading...</p>
-                    </div>
-                </section>
+                    <div class="chart-legend" id="chartLegend"></div>
+                </div>
 
                 <!-- Daily Spending -->
-                <section class="daily-section">
-                    <div class="section-header">
-                        <h2>📅 Daily Spending</h2>
-                        <input type="date" id="dailyDatePicker">
+                <div class="daily-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-calendar-day"></i> Today's Spending</h3>
+                        <input type="date" id="dailyDatePicker" class="date-picker">
                     </div>
-                    <div id="dailySummary" class="daily-summary">
-                        <p>Select a date to see spending summary</p>
+                    <div class="daily-content" id="dailyContent">
+                        <div class="empty-state">
+                            <i class="fas fa-coins"></i>
+                            <p>No spending today</p>
+                        </div>
                     </div>
-                </section>
+                </div>
 
                 <!-- Recent Transactions -->
-                <section class="transactions-section">
-                    <div class="section-header">
-                        <h2>📝 Recent Transactions</h2>
-                        <button id="viewAllTransactionsBtn" class="btn-text">View All</button>
+                <div class="transactions-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-history"></i> Recent</h3>
+                        <button class="view-all" id="viewAllBtn">View All</button>
                     </div>
-                    <div id="recentTransactions" class="transactions-list">
-                        <p>No transactions yet</p>
+                    <div class="transactions-list" id="recentTransactions">
+                        <div class="empty-state">
+                            <i class="fas fa-receipt"></i>
+                            <p>No transactions yet</p>
+                        </div>
                     </div>
-                </section>
+                </div>
 
-                <!-- Archive Section -->
-                <section class="archive-section">
-                    <div class="section-header">
-                        <h2>📁 Budget Archive</h2>
-                        <button id="viewArchiveBtn" class="btn-text">View All</button>
+                <!-- Quick Stats -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon blue">
+                            <i class="fas fa-money-bill-wave"></i>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-label">Added Money</span>
+                            <span class="stat-value" id="statAddedMoney">₱0</span>
+                        </div>
                     </div>
-                    <div id="budgetArchive" class="archive-list">
-                        <p>No archived budgets yet</p>
+                    <div class="stat-card">
+                        <div class="stat-icon green">
+                            <i class="fas fa-piggy-bank"></i>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-label">LRT Savings</span>
+                            <span class="stat-value" id="statLRTSavings">₱0</span>
+                        </div>
                     </div>
-                </section>
+                    <div class="stat-card">
+                        <div class="stat-icon orange">
+                            <i class="fas fa-fire"></i>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-label">Biggest Expense</span>
+                            <span class="stat-value" id="statBiggestExpense">₱0</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon purple">
+                            <i class="fas fa-layer-group"></i>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-label">Categories</span>
+                            <span class="stat-value" id="statCategories">0</span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <!-- All Transactions Screen -->
+            <!-- Transactions Screen -->
             <div id="transactionsScreen" class="screen">
                 <div class="screen-header">
-                    <button class="back-btn" data-target="dashboard">← Back</button>
+                    <button class="back-btn" id="backToDashboard">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
                     <h2>All Transactions</h2>
+                    <button class="icon-btn" id="filterToggleBtn">
+                        <i class="fas fa-filter"></i>
+                    </button>
                 </div>
-                <div class="filters">
-                    <select id="filterCategory">
-                        <option value="">All Categories</option>
-                        <option value="transportation">Transportation</option>
-                        <option value="food">Food</option>
-                        <option value="lrt">LRT Fare</option>
-                        <option value="drinks">Drinks</option>
-                        <option value="others">Others</option>
-                        <option value="added_money">Added Money</option>
-                    </select>
-                    <input type="date" id="filterDateFrom" placeholder="From">
-                    <input type="date" id="filterDateTo" placeholder="To">
-                    <button id="clearFilters" class="btn-text">Clear</button>
+                
+                <div class="filters-panel" id="filtersPanel">
+                    <div class="filter-group">
+                        <label>Category</label>
+                        <select id="filterCategory" class="filter-select">
+                            <option value="">All</option>
+                            <option value="transportation">🚗 Transportation</option>
+                            <option value="food">🍔 Food</option>
+                            <option value="lrt">🚆 LRT</option>
+                            <option value="drinks">🥤 Drinks</option>
+                            <option value="others">📦 Others</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Type</label>
+                        <select id="filterType" class="filter-select">
+                            <option value="">All</option>
+                            <option value="expense">Expense</option>
+                            <option value="income">Income</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>From</label>
+                        <input type="date" id="filterDateFrom" class="filter-input">
+                    </div>
+                    <div class="filter-group">
+                        <label>To</label>
+                        <input type="date" id="filterDateTo" class="filter-input">
+                    </div>
+                    <div class="filter-actions">
+                        <button class="btn-secondary" id="applyFilters">Apply</button>
+                        <button class="btn-text" id="clearFilters">Clear</button>
+                    </div>
                 </div>
-                <div id="allTransactions" class="transactions-list detailed">
-                    <!-- Filled by JavaScript -->
-                </div>
-            </div>
-
-            <!-- Archive Screen -->
-            <div id="archiveScreen" class="screen">
-                <div class="screen-header">
-                    <button class="back-btn" data-target="dashboard">← Back</button>
-                    <h2>Budget Archive</h2>
-                </div>
-                <div id="fullArchive" class="archive-list detailed">
-                    <!-- Filled by JavaScript -->
+                
+                <div class="transactions-container">
+                    <div id="allTransactions" class="transactions-list detailed">
+                        <!-- Transactions will be loaded here -->
+                    </div>
                 </div>
             </div>
 
             <!-- Reports Screen -->
             <div id="reportsScreen" class="screen">
                 <div class="screen-header">
-                    <button class="back-btn" data-target="dashboard">← Back</button>
+                    <button class="back-btn" id="backToDashboard2">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
                     <h2>Reports</h2>
                 </div>
+                
                 <div class="reports-options">
-                    <button class="report-btn" data-report="spending">📊 Spending Report</button>
-                    <button class="report-btn" data-report="savings">💰 Savings Report</button>
-                    <button class="report-btn" data-report="category">📈 Category Report</button>
-                    <button class="report-btn" data-report="full">📋 Full Budget Report</button>
+                    <button class="report-option" data-report="spending">
+                        <div class="report-icon">
+                            <i class="fas fa-chart-pie"></i>
+                        </div>
+                        <span>Spending Report</span>
+                    </button>
+                    <button class="report-option" data-report="category">
+                        <div class="report-icon">
+                            <i class="fas fa-tags"></i>
+                        </div>
+                        <span>Category Report</span>
+                    </button>
+                    <button class="report-option" data-report="savings">
+                        <div class="report-icon">
+                            <i class="fas fa-piggy-bank"></i>
+                        </div>
+                        <span>Savings Report</span>
+                    </button>
+                    <button class="report-option" data-report="full">
+                        <div class="report-icon">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                        <span>Full Report</span>
+                    </button>
                 </div>
+                
                 <div id="reportContent" class="report-content">
-                    <p>Select a report to generate</p>
+                    <div class="empty-state">
+                        <i class="fas fa-chart-bar"></i>
+                        <p>Select a report to generate</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Archive Screen -->
+            <div id="archiveScreen" class="screen">
+                <div class="screen-header">
+                    <button class="back-btn" id="backToDashboard3">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <h2>Budget Archive</h2>
+                </div>
+                
+                <div class="archive-stats" id="archiveStats">
+                    <!-- Archive stats will be loaded here -->
+                </div>
+                
+                <div id="archiveList" class="archive-container">
+                    <!-- Archived budgets will be loaded here -->
                 </div>
             </div>
         </main>
@@ -160,80 +320,121 @@
         <!-- Bottom Navigation -->
         <nav class="bottom-nav">
             <button class="nav-btn active" data-screen="dashboard">
-                <span>📊</span>Dashboard
+                <i class="fas fa-home"></i>
+                <span>Home</span>
             </button>
-            <button class="nav-btn" data-screen="add">
-                <span>➕</span>Add
+            <button class="nav-btn" data-screen="transactions">
+                <i class="fas fa-exchange-alt"></i>
+                <span>Transactions</span>
+            </button>
+            <button class="nav-btn" id="quickAddBtn">
+                <div class="fab">
+                    <i class="fas fa-plus"></i>
+                </div>
+                <span>Add</span>
             </button>
             <button class="nav-btn" data-screen="reports">
-                <span>📈</span>Reports
+                <i class="fas fa-chart-line"></i>
+                <span>Reports</span>
             </button>
             <button class="nav-btn" data-screen="archive">
-                <span>📁</span>Archive
+                <i class="fas fa-archive"></i>
+                <span>Archive</span>
             </button>
         </nav>
     </div>
 
     <!-- Modals -->
-    <div id="modalOverlay" class="modal-overlay">
+    <div class="modal-overlay" id="modalOverlay">
         <!-- New Budget Modal -->
-        <div id="newBudgetModal" class="modal">
+        <div class="modal" id="newBudgetModal">
             <div class="modal-header">
                 <h3>Create New Budget</h3>
-                <button class="close-modal">&times;</button>
+                <button class="close-modal"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label>Budget Name</label>
+                    <label for="budgetTitle">Budget Name</label>
                     <input type="text" id="budgetTitle" placeholder="e.g., December Budget">
                 </div>
-                <div class="form-group">
-                    <label>Start Date</label>
-                    <input type="date" id="startDate">
+                <div class="date-group">
+                    <div class="form-group">
+                        <label for="startDate">Start Date</label>
+                        <input type="date" id="startDate">
+                    </div>
+                    <div class="form-group">
+                        <label for="endDate">End Date</label>
+                        <input type="date" id="endDate">
+                    </div>
                 </div>
                 <div class="form-group">
-                    <label>End Date</label>
-                    <input type="date" id="endDate">
-                </div>
-                <div class="form-group">
-                    <label>Total Budget Amount</label>
-                    <input type="number" id="budgetAmount" placeholder="₱" step="0.01">
+                    <label for="budgetAmount">Total Budget Amount</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-peso-sign"></i>
+                        <input type="number" id="budgetAmount" placeholder="0.00" step="0.01" min="0">
+                    </div>
                 </div>
                 <div class="modal-actions">
-                    <button id="createBudgetBtn" class="btn-primary">Create New Budget</button>
+                    <button class="btn-primary" id="createBudgetBtn">Create Budget</button>
                     <button class="btn-secondary close-modal">Cancel</button>
                 </div>
             </div>
         </div>
 
         <!-- Add Expense Modal -->
-        <div id="addExpenseModal" class="modal">
+        <div class="modal" id="addExpenseModal">
             <div class="modal-header">
                 <h3>Add Expense</h3>
-                <button class="close-modal">&times;</button>
+                <button class="close-modal"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
                     <label>Amount</label>
-                    <input type="number" id="expenseAmount" placeholder="₱" step="0.01">
+                    <div class="input-with-icon">
+                        <i class="fas fa-peso-sign"></i>
+                        <input type="number" id="expenseAmount" placeholder="0.00" step="0.01" min="0">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Category</label>
-                    <select id="expenseCategory">
-                        <option value="transportation">🚗 Transportation</option>
-                        <option value="food">🍔 Food</option>
-                        <option value="lrt">🚆 LRT Fare</option>
-                        <option value="drinks">🥤 Drinks</option>
-                        <option value="others">📦 Others</option>
-                    </select>
+                    <div class="category-buttons">
+                        <button class="category-btn" data-category="transportation">
+                            <i class="fas fa-car"></i>
+                            <span>Transport</span>
+                        </button>
+                        <button class="category-btn" data-category="food">
+                            <i class="fas fa-utensils"></i>
+                            <span>Food</span>
+                        </button>
+                        <button class="category-btn" data-category="lrt">
+                            <i class="fas fa-train"></i>
+                            <span>LRT</span>
+                        </button>
+                        <button class="category-btn" data-category="drinks">
+                            <i class="fas fa-coffee"></i>
+                            <span>Drinks</span>
+                        </button>
+                        <button class="category-btn" data-category="others">
+                            <i class="fas fa-box"></i>
+                            <span>Others</span>
+                        </button>
+                    </div>
                 </div>
                 <div class="form-group" id="lrtDiscountGroup" style="display: none;">
-                    <label>
-                        <input type="checkbox" id="applyDiscount"> Apply 50% Student Discount
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="applyDiscount">
+                        <span class="checkbox-custom"></span>
+                        Apply 50% Student Discount
                     </label>
-                    <div id="discountInfo" class="discount-info" style="display: none;">
-                        <p>You pay: ₱<span id="discountedAmount">0</span></p>
-                        <p>You save: ₱<span id="savedAmount">0</span></p>
+                    <div class="discount-info" id="discountInfo" style="display: none;">
+                        <div class="discount-item">
+                            <span>You pay:</span>
+                            <span class="discount-amount">₱<span id="discountedAmount">0.00</span></span>
+                        </div>
+                        <div class="discount-item">
+                            <span>You save:</span>
+                            <span class="savings-amount">₱<span id="savedAmount">0.00</span></span>
+                        </div>
                     </div>
                 </div>
                 <div class="form-group">
@@ -245,69 +446,25 @@
                     <input type="date" id="expenseDate">
                 </div>
                 <div class="modal-actions">
-                    <button id="saveExpenseBtn" class="btn-primary">Save Expense</button>
-                    <button class="btn-secondary close-modal">Cancel</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Edit Expense Modal -->
-        <div id="editExpenseModal" class="modal">
-            <div class="modal-header">
-                <h3>Edit Expense</h3>
-                <button class="close-modal">&times;</button>
-            </div>
-            <div class="modal-body">
-                <input type="hidden" id="editTransactionId">
-                <div class="form-group">
-                    <label>Amount</label>
-                    <input type="number" id="editExpenseAmount" placeholder="₱" step="0.01">
-                </div>
-                <div class="form-group">
-                    <label>Category</label>
-                    <select id="editExpenseCategory">
-                        <option value="transportation">🚗 Transportation</option>
-                        <option value="food">🍔 Food</option>
-                        <option value="lrt">🚆 LRT Fare</option>
-                        <option value="drinks">🥤 Drinks</option>
-                        <option value="others">📦 Others</option>
-                    </select>
-                </div>
-                <div class="form-group" id="editLrtDiscountGroup" style="display: none;">
-                    <label>
-                        <input type="checkbox" id="editApplyDiscount"> Apply 50% Student Discount
-                    </label>
-                    <div id="editDiscountInfo" class="discount-info" style="display: none;">
-                        <p>You pay: ₱<span id="editDiscountedAmount">0</span></p>
-                        <p>You save: ₱<span id="editSavedAmount">0</span></p>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Description (Optional)</label>
-                    <input type="text" id="editExpenseDescription" placeholder="What was this for?">
-                </div>
-                <div class="form-group">
-                    <label>Date</label>
-                    <input type="date" id="editExpenseDate">
-                </div>
-                <div class="modal-actions">
-                    <button id="updateExpenseBtn" class="btn-primary">Update Expense</button>
-                    <button id="deleteExpenseBtn" class="btn-danger">Delete Expense</button>
+                    <button class="btn-primary" id="saveExpenseBtn">Save Expense</button>
                     <button class="btn-secondary close-modal">Cancel</button>
                 </div>
             </div>
         </div>
 
         <!-- Add Money Modal -->
-        <div id="addMoneyModal" class="modal">
+        <div class="modal" id="addMoneyModal">
             <div class="modal-header">
                 <h3>Add Money</h3>
-                <button class="close-modal">&times;</button>
+                <button class="close-modal"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
                     <label>Amount to Add</label>
-                    <input type="number" id="moneyAmount" placeholder="₱" step="0.01">
+                    <div class="input-with-icon">
+                        <i class="fas fa-peso-sign"></i>
+                        <input type="number" id="moneyAmount" placeholder="0.00" step="0.01" min="0">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Source (Optional)</label>
@@ -318,80 +475,212 @@
                     <input type="date" id="moneyDate">
                 </div>
                 <div class="modal-actions">
-                    <button id="saveMoneyBtn" class="btn-success">Add Money</button>
+                    <button class="btn-success" id="saveMoneyBtn">Add Money</button>
                     <button class="btn-secondary close-modal">Cancel</button>
                 </div>
             </div>
         </div>
 
-        <!-- Archive Budget Modal -->
-        <div id="archiveBudgetModal" class="modal">
+        <!-- Edit Transaction Modal -->
+        <div class="modal" id="editTransactionModal">
             <div class="modal-header">
-                <h3>Archive Current Budget</h3>
-                <button class="close-modal">&times;</button>
+                <h3>Edit Transaction</h3>
+                <button class="close-modal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editTransactionId">
+                <div class="form-group">
+                    <label>Amount</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-peso-sign"></i>
+                        <input type="number" id="editExpenseAmount" placeholder="0.00" step="0.01" min="0">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <div class="category-buttons">
+                        <button class="category-btn" data-category="transportation">
+                            <i class="fas fa-car"></i>
+                            <span>Transport</span>
+                        </button>
+                        <button class="category-btn" data-category="food">
+                            <i class="fas fa-utensils"></i>
+                            <span>Food</span>
+                        </button>
+                        <button class="category-btn" data-category="lrt">
+                            <i class="fas fa-train"></i>
+                            <span>LRT</span>
+                        </button>
+                        <button class="category-btn" data-category="drinks">
+                            <i class="fas fa-coffee"></i>
+                            <span>Drinks</span>
+                        </button>
+                        <button class="category-btn" data-category="others">
+                            <i class="fas fa-box"></i>
+                            <span>Others</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="form-group" id="editLrtDiscountGroup" style="display: none;">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="editApplyDiscount">
+                        <span class="checkbox-custom"></span>
+                        Apply 50% Student Discount
+                    </label>
+                    <div class="discount-info" id="editDiscountInfo" style="display: none;">
+                        <div class="discount-item">
+                            <span>You pay:</span>
+                            <span class="discount-amount">₱<span id="editDiscountedAmount">0.00</span></span>
+                        </div>
+                        <div class="discount-item">
+                            <span>You save:</span>
+                            <span class="savings-amount">₱<span id="editSavedAmount">0.00</span></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <input type="text" id="editExpenseDescription" placeholder="What was this for?">
+                </div>
+                <div class="form-group">
+                    <label>Date</label>
+                    <input type="date" id="editExpenseDate">
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-primary" id="updateTransactionBtn">Update</button>
+                    <button class="btn-danger" id="deleteTransactionBtn">Delete</button>
+                    <button class="btn-secondary close-modal">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Export Data Modal -->
+        <div class="modal" id="exportModal">
+            <div class="modal-header">
+                <h3>Export Data</h3>
+                <button class="close-modal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="export-options">
+                    <button class="export-option" id="copyDataBtn">
+                        <i class="fas fa-copy"></i>
+                        <span>Copy to Clipboard</span>
+                    </button>
+                    <button class="export-option" id="downloadJsonBtn">
+                        <i class="fas fa-file-export"></i>
+                        <span>Download JSON File</span>
+                    </button>
+                    <button class="export-option" id="printReportBtn">
+                        <i class="fas fa-print"></i>
+                        <span>Print Report</span>
+                    </button>
+                </div>
+                <div class="warning-message">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>Save your data regularly to prevent loss!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Import Data Modal -->
+        <div class="modal" id="importModal">
+            <div class="modal-header">
+                <h3>Import Data</h3>
+                <button class="close-modal"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <p id="archiveMessage">You're about to create a new budget. The current budget will be archived with all its data.</p>
-                    <p><strong>Current Budget:</strong> <span id="currentBudgetName">None</span></p>
-                    <p><strong>Total Spent:</strong> <span id="currentBudgetSpent">₱0.00</span></p>
-                    <p><strong>Remaining:</strong> <span id="currentBudgetRemaining">₱0.00</span></p>
+                    <label>Paste your exported data:</label>
+                    <textarea id="importDataText" rows="6" placeholder="Paste JSON data here..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Or upload file:</label>
+                    <input type="file" id="importFile" accept=".json">
+                </div>
+                <div class="warning-message danger">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <p>This will replace ALL current data! Make sure you have a backup.</p>
                 </div>
                 <div class="modal-actions">
-                    <button id="confirmArchiveBtn" class="btn-primary">Yes, Archive & Create New</button>
-                    <button id="cancelArchiveBtn" class="btn-secondary">Cancel</button>
+                    <button class="btn-primary" id="confirmImportBtn">Import Data</button>
+                    <button class="btn-secondary close-modal">Cancel</button>
                 </div>
             </div>
         </div>
 
-        <!-- Export/Import Modal -->
-        <div id="dataModal" class="modal">
+        <!-- Report View Modal -->
+        <div class="modal full-modal" id="reportViewModal">
             <div class="modal-header">
-                <h3 id="dataModalTitle">Export/Import Data</h3>
-                <button class="close-modal">&times;</button>
+                <h3 id="reportTitle">Report</h3>
+                <button class="close-modal"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-body">
-                <div id="exportSection" style="display: none;">
-                    <div class="form-group">
-                        <label>Your Data (Copy this text):</label>
-                        <textarea id="exportDataText" rows="10" readonly style="width: 100%; font-family: monospace;"></textarea>
-                    </div>
-                    <div class="modal-actions">
-                        <button id="copyDataBtn" class="btn-primary">📋 Copy to Clipboard</button>
-                        <button id="downloadDataBtn" class="btn-secondary">📥 Download as File</button>
-                    </div>
-                </div>
-                <div id="importSection" style="display: none;">
-                    <div class="form-group">
-                        <label>Paste your exported data:</label>
-                        <textarea id="importDataText" rows="10" placeholder="Paste your exported data here..." style="width: 100%; font-family: monospace;"></textarea>
-                    </div>
-                    <div class="warning-message">
-                        ⚠️ Warning: Importing data will replace all current data!
-                    </div>
-                    <div class="modal-actions">
-                        <button id="confirmImportBtn" class="btn-primary">Import Data</button>
-                        <button class="btn-secondary close-modal">Cancel</button>
-                    </div>
+                <div id="reportViewContent"></div>
+            </div>
+        </div>
+
+        <!-- Confirmation Modal -->
+        <div class="modal" id="confirmationModal">
+            <div class="modal-header">
+                <h3 id="confirmTitle">Confirm Action</h3>
+                <button class="close-modal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMessage">Are you sure you want to perform this action?</p>
+                <div class="modal-actions">
+                    <button class="btn-danger" id="confirmActionBtn">Confirm</button>
+                    <button class="btn-secondary close-modal">Cancel</button>
                 </div>
             </div>
         </div>
 
-        <!-- Print Report Modal -->
-        <div id="printReportModal" class="modal">
+        <!-- Archive Confirmation Modal -->
+        <div class="modal" id="archiveConfirmModal">
             <div class="modal-header">
-                <h3>Print Report</h3>
-                <button class="close-modal">&times;</button>
+                <h3>Archive Current Budget</h3>
+                <button class="close-modal"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-body">
-                <div id="printContent"></div>
-                <div class="print-actions">
-                    <button id="printBtn" class="btn-primary">🖨️ Print</button>
-                    <button id="downloadPdfBtn" class="btn-secondary">📥 Download PDF</button>
-                    <button class="btn-secondary close-modal">Close</button>
+                <div class="budget-info-card">
+                    <h4 id="archiveBudgetName">Budget Name</h4>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">Total Budget</span>
+                            <span class="info-value" id="archiveTotal">₱0.00</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Total Spent</span>
+                            <span class="info-value" id="archiveSpent">₱0.00</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Remaining</span>
+                            <span class="info-value positive" id="archiveRemaining">₱0.00</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Transactions</span>
+                            <span class="info-value" id="archiveTransactions">0</span>
+                        </div>
+                    </div>
+                </div>
+                <p class="warning-text">
+                    <i class="fas fa-info-circle"></i>
+                    Archiving will save this budget to history. You can view it anytime in Archive.
+                </p>
+                <div class="modal-actions">
+                    <button class="btn-primary" id="confirmArchiveBtn">Archive & Create New</button>
+                    <button class="btn-secondary close-modal">Cancel</button>
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <p>Loading...</p>
     </div>
 
     <!-- Scripts -->

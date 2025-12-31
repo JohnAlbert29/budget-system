@@ -1,14 +1,17 @@
 // Main Application Initialization
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Budget System Loading...');
+    console.log('🚀 Budget Mobile App Loading...');
     
-    // Check if all required elements exist
+    // Check for required elements
     if (!document.getElementById('spendingChart')) {
         console.error('❌ Chart canvas not found!');
         return;
     }
     
-    // Initialize managers in correct order
+    // Show loading overlay
+    showLoading();
+    
+    // Initialize managers
     const budgetManager = new BudgetManager();
     const transactionManager = new TransactionManager();
     const chartManager = new ChartManager();
@@ -19,42 +22,106 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('📊 Chart initialized');
     } catch (error) {
         console.error('Error initializing chart:', error);
+        showToast('Error initializing chart', 'error');
     }
     
     // Initialize UI manager
     const uiManager = new UIManager(budgetManager, transactionManager, chartManager);
     
-    // Initial UI update with delay to ensure DOM is ready
+    // Hide loading after initialization
     setTimeout(() => {
+        hideLoading();
         uiManager.updateUI();
         console.log('✅ UI updated');
-    }, 300);
+    }, 500);
     
-    // Set today's date as default for filters
+    // Set default dates for filters
     const today = new Date().toISOString().split('T')[0];
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    const startOfMonthStr = startOfMonth.toISOString().split('T')[0];
+    
     const filterDateFrom = document.getElementById('filterDateFrom');
     const filterDateTo = document.getElementById('filterDateTo');
+    const dailyDatePicker = document.getElementById('dailyDatePicker');
     
-    if (filterDateFrom) filterDateFrom.value = today;
+    if (filterDateFrom) filterDateFrom.value = startOfMonthStr;
     if (filterDateTo) filterDateTo.value = today;
+    if (dailyDatePicker) dailyDatePicker.value = today;
     
     // Show welcome message if no budget exists
     if (!budgetManager.activeBudget && budgetManager.archive.length === 0) {
         setTimeout(() => {
-            alert('Welcome to Simple Budget System! 🎉\n\nTo get started:\n1. Click "New Budget" to create your first budget\n2. Add expenses as you spend\n3. Add money when you receive extra funds\n4. Track your spending and savings!\n\n💡 Tip: You can create a new budget anytime. The current budget will be archived automatically.');
-        }, 1500);
+            showToast('Welcome to Budget Tracker! Create your first budget to get started.', 'info');
+        }, 2000);
     }
     
-    // Make managers globally available for debugging
+    // Check for expired budget
+    setTimeout(() => {
+        if (budgetManager.checkBudgetExpiry()) {
+            showToast('Current budget has ended. Consider archiving it.', 'warning');
+        }
+    }, 3000);
+    
+    // Make managers globally available
     window.budgetManager = budgetManager;
     window.transactionManager = transactionManager;
     window.uiManager = uiManager;
     window.chartManager = chartManager;
     
-    console.log('✅ Budget System Loaded Successfully!');
+    console.log('✅ Budget Mobile App Loaded Successfully!');
     
-    // Auto-save every minute
+    // Auto-save every 30 seconds
     setInterval(() => {
         budgetManager.saveToStorage();
+    }, 30000);
+    
+    // Check for new day every minute
+    setInterval(() => {
+        uiManager.checkForNewDay();
     }, 60000);
 });
+
+// Utility functions for UI
+function showLoading() {
+    const loading = document.getElementById('loadingOverlay');
+    if (loading) loading.style.display = 'flex';
+}
+
+function hideLoading() {
+    const loading = document.getElementById('loadingOverlay');
+    if (loading) loading.style.display = 'none';
+}
+
+function showToast(message, type = 'info') {
+    const toast = document.getElementById('toast');
+    if (!toast) return;
+    
+    toast.textContent = message;
+    toast.style.display = 'block';
+    
+    // Set color based on type
+    const colors = {
+        'info': '#4361ee',
+        'success': '#4cc9f0',
+        'warning': '#f8961e',
+        'error': '#f72585'
+    };
+    toast.style.background = colors[type] || colors.info;
+    
+    // Hide after 3 seconds
+    setTimeout(() => {
+        toast.style.display = 'none';
+    }, 3000);
+}
+
+// Add service worker for PWA capabilities
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').then(registration => {
+            console.log('ServiceWorker registered:', registration);
+        }).catch(error => {
+            console.log('ServiceWorker registration failed:', error);
+        });
+    });
+}

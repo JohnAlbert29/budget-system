@@ -5,9 +5,8 @@ class BudgetManager {
         this.loadFromStorage();
     }
 
-    // Create new budget - automatically archives current budget
     createBudget(name, startDate, endDate, totalAmount) {
-        // Archive current budget if exists (even if not expired)
+        // Archive current budget if exists
         if (this.activeBudget) {
             this.archiveCurrentBudget();
         }
@@ -20,14 +19,16 @@ class BudgetManager {
             totalBudget: parseFloat(totalAmount),
             addedMoney: 0,
             categories: {
-                transportation: { spent: 0 },
-                food: { spent: 0 },
-                lrt: { spent: 0, trips: 0, saved: 0 },
-                drinks: { spent: 0 },
-                others: { spent: 0 },
-                added_money: { spent: 0 }
+                transportation: { spent: 0, count: 0 },
+                food: { spent: 0, count: 0 },
+                lrt: { spent: 0, trips: 0, saved: 0, count: 0 },
+                drinks: { spent: 0, count: 0 },
+                others: { spent: 0, count: 0 },
+                added_money: { spent: 0, count: 0 }
             },
-            transactions: []
+            transactions: [],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
         };
 
         this.activeBudget = budget;
@@ -35,29 +36,25 @@ class BudgetManager {
         return budget;
     }
 
-    // Archive current budget
     archiveCurrentBudget() {
         if (!this.activeBudget) return null;
         
-        // Calculate final statistics
         const totalSpent = this.getTotalSpent();
         const remaining = this.activeBudget.totalBudget - totalSpent;
-        
-        // Get the actual end date (either today or budget's end date, whichever is earlier)
         const today = new Date().toISOString().split('T')[0];
         const budgetEndDate = this.activeBudget.endDate;
         const actualEndDate = today < budgetEndDate ? today : budgetEndDate;
         
         const endedBudget = {
             ...this.activeBudget,
-            endDate: actualEndDate, // Use actual end date
+            endDate: actualEndDate,
             totalSpent: totalSpent,
             savings: remaining,
             archivedAt: new Date().toISOString(),
-            status: today < budgetEndDate ? 'incomplete' : 'completed'
+            status: today < budgetEndDate ? 'incomplete' : 'completed',
+            daysActive: this.getDaysActive()
         };
         
-        // Add to archive at the beginning (most recent first)
         this.archive.unshift(endedBudget);
         
         // Keep only last 50 archived budgets
@@ -69,20 +66,14 @@ class BudgetManager {
         return endedBudget;
     }
 
-    // Manually archive current budget (for UI)
-    manualArchiveCurrentBudget() {
-        return this.archiveCurrentBudget();
-    }
-
-    // Add money to budget
     addMoney(amount, source = '') {
         if (!this.activeBudget) return false;
         
         const amountNum = parseFloat(amount);
         this.activeBudget.totalBudget += amountNum;
         this.activeBudget.addedMoney += amountNum;
+        this.activeBudget.updatedAt = new Date().toISOString();
         
-        // Record as transaction
         const transaction = {
             id: Date.now(),
             type: 'income',
@@ -94,11 +85,12 @@ class BudgetManager {
         };
         
         this.activeBudget.transactions.push(transaction);
+        this.activeBudget.categories.added_money.spent += amountNum;
+        this.activeBudget.categories.added_money.count += 1;
         this.saveToStorage();
         return transaction;
     }
 
-    // Add expense
     addExpense(amount, category, description = '', date, applyDiscount = false) {
         if (!this.activeBudget) return false;
         
@@ -106,14 +98,9 @@ class BudgetManager {
         let savedAmount = 0;
         let fullAmount = actualAmount;
         
-        // Apply LRT discount
         if (category === 'lrt' && applyDiscount) {
             savedAmount = actualAmount * 0.5;
             actualAmount = actualAmount * 0.5;
-            
-            // Track LRT savings
-            if (!this.activeBudget.categories.lrt.saved) this.activeBudget.categories.lrt.saved = 0;
-            if (!this.activeBudget.categories.lrt.trips) this.activeBudget.categories.lrt.trips = 0;
             
             this.activeBudget.categories.lrt.saved += savedAmount;
             this.activeBudget.categories.lrt.trips += 1;
@@ -134,40 +121,35 @@ class BudgetManager {
         
         this.activeBudget.transactions.push(transaction);
         
-        // Initialize category if it doesn't exist
         if (!this.activeBudget.categories[category]) {
-            this.activeBudget.categories[category] = { spent: 0 };
+            this.activeBudget.categories[category] = { spent: 0, count: 0 };
         }
         
         this.activeBudget.categories[category].spent += actualAmount;
+        this.activeBudget.categories[category].count += 1;
+        this.activeBudget.updatedAt = new Date().toISOString();
         this.saveToStorage();
         return transaction;
     }
 
-    // Update expense
     updateExpense(transactionId, updates) {
         if (!this.activeBudget) return false;
         
-        const transactionIndex = this.activeBudget.transactions
-            .findIndex(t => t.id === transactionId);
-        
+        const transactionIndex = this.activeBudget.transactions.findIndex(t => t.id === transactionId);
         if (transactionIndex === -1) return false;
         
         const oldTransaction = this.activeBudget.transactions[transactionIndex];
         
-        // Remove old amount from category
+        // Remove old amount
         if (this.activeBudget.categories[oldTransaction.category]) {
             this.activeBudget.categories[oldTransaction.category].spent -= oldTransaction.amount;
+            this.activeBudget.categories[oldTransaction.category].count -= 1;
         }
         
-        // Remove LRT savings if applicable
+        // Remove LRT savings
         if (oldTransaction.category === 'lrt' && oldTransaction.savedAmount) {
-            if (this.activeBudget.categories.lrt.saved) {
-                this.activeBudget.categories.lrt.saved -= oldTransaction.savedAmount;
-            }
-            if (this.activeBudget.categories.lrt.trips) {
-                this.activeBudget.categories.lrt.trips -= 1;
-            }
+            this.activeBudget.categories.lrt.saved -= oldTransaction.savedAmount;
+            this.activeBudget.categories.lrt.trips -= 1;
         }
         
         // Prepare new transaction
@@ -175,14 +157,9 @@ class BudgetManager {
         let savedAmount = 0;
         let fullAmount = actualAmount;
         
-        // Apply LRT discount if applicable
         if (updates.category === 'lrt' && updates.applyDiscount) {
             savedAmount = actualAmount * 0.5;
             actualAmount = actualAmount * 0.5;
-            
-            // Add LRT savings
-            if (!this.activeBudget.categories.lrt.saved) this.activeBudget.categories.lrt.saved = 0;
-            if (!this.activeBudget.categories.lrt.trips) this.activeBudget.categories.lrt.trips = 0;
             
             this.activeBudget.categories.lrt.saved += savedAmount;
             this.activeBudget.categories.lrt.trips += 1;
@@ -201,100 +178,93 @@ class BudgetManager {
             updatedAt: Date.now()
         };
         
-        // Add new amount to category
+        // Add new amount
         if (!this.activeBudget.categories[updates.category]) {
-            this.activeBudget.categories[updates.category] = { spent: 0 };
+            this.activeBudget.categories[updates.category] = { spent: 0, count: 0 };
         }
         this.activeBudget.categories[updates.category].spent += actualAmount;
+        this.activeBudget.categories[updates.category].count += 1;
         
+        this.activeBudget.updatedAt = new Date().toISOString();
         this.saveToStorage();
         return this.activeBudget.transactions[transactionIndex];
     }
 
-    // Delete transaction
     deleteTransaction(transactionId) {
         if (!this.activeBudget) return false;
         
-        const transactionIndex = this.activeBudget.transactions
-            .findIndex(t => t.id === transactionId);
-        
+        const transactionIndex = this.activeBudget.transactions.findIndex(t => t.id === transactionId);
         if (transactionIndex === -1) return false;
         
         const transaction = this.activeBudget.transactions[transactionIndex];
         
-        // Remove from category spent
+        // Remove from category
         if (this.activeBudget.categories[transaction.category]) {
             this.activeBudget.categories[transaction.category].spent -= transaction.amount;
+            this.activeBudget.categories[transaction.category].count -= 1;
         }
         
-        // Remove from LRT tracking if applicable
+        // Remove LRT tracking
         if (transaction.category === 'lrt' && transaction.savedAmount) {
-            if (this.activeBudget.categories.lrt.saved) {
-                this.activeBudget.categories.lrt.saved -= transaction.savedAmount;
-            }
-            if (this.activeBudget.categories.lrt.trips) {
-                this.activeBudget.categories.lrt.trips -= 1;
-            }
+            this.activeBudget.categories.lrt.saved -= transaction.savedAmount;
+            this.activeBudget.categories.lrt.trips -= 1;
         }
         
-        // Remove transaction
         this.activeBudget.transactions.splice(transactionIndex, 1);
+        this.activeBudget.updatedAt = new Date().toISOString();
         this.saveToStorage();
-        
         return true;
     }
 
-    // Get total spent
     getTotalSpent() {
         if (!this.activeBudget) return 0;
         
         return Object.values(this.activeBudget.categories)
-            .filter(cat => cat.spent) // Only include categories with spending
+            .filter(cat => cat.spent && cat.category !== 'added_money')
             .reduce((sum, cat) => sum + (cat.spent || 0), 0);
     }
 
-    // Get budget summary
     getBudgetSummary() {
         if (!this.activeBudget) return null;
         
         const totalSpent = this.getTotalSpent();
         const remaining = this.activeBudget.totalBudget - totalSpent;
+        const percentage = (totalSpent / this.activeBudget.totalBudget) * 100;
         
         return {
             totalBudget: this.activeBudget.totalBudget,
             totalSpent,
             remaining,
+            percentage: Math.min(100, percentage),
             addedMoney: this.activeBudget.addedMoney || 0
         };
     }
 
-    // Get category breakdown
     getCategoryBreakdown() {
         if (!this.activeBudget) return [];
         
         const totalSpent = this.getTotalSpent();
-        
-        return Object.entries(this.activeBudget.categories)
+        const categories = Object.entries(this.activeBudget.categories)
             .filter(([name]) => name !== 'added_money')
             .map(([name, data]) => ({
                 name,
                 spent: data.spent || 0,
+                count: data.count || 0,
                 percentage: totalSpent > 0 ? ((data.spent || 0) / totalSpent * 100) : 0
             }))
-            .filter(cat => cat.spent > 0);
+            .filter(cat => cat.spent > 0)
+            .sort((a, b) => b.spent - a.spent);
+        
+        return categories;
     }
 
-    // Get biggest expense
     getBiggestExpense() {
         const categories = this.getCategoryBreakdown();
         if (categories.length === 0) return null;
         
-        return categories.reduce((max, cat) => 
-            cat.spent > max.spent ? cat : max
-        );
+        return categories[0];
     }
 
-    // Get daily spending summary
     getDailySpending(date) {
         if (!this.activeBudget) return { total: 0, transactions: [] };
         
@@ -302,9 +272,8 @@ class BudgetManager {
             .filter(t => t.date === date && t.type === 'expense');
         
         const total = dailyTransactions.reduce((sum, t) => sum + t.amount, 0);
-        
-        // Get category breakdown for the day
         const categoryBreakdown = {};
+        
         dailyTransactions.forEach(t => {
             categoryBreakdown[t.category] = (categoryBreakdown[t.category] || 0) + t.amount;
         });
@@ -317,13 +286,11 @@ class BudgetManager {
         };
     }
 
-    // Get all transactions with filters
     getAllTransactions(filters = {}) {
         if (!this.activeBudget) return [];
         
-        let transactions = [...(this.activeBudget.transactions || [])];
+        let transactions = [...this.activeBudget.transactions];
         
-        // Apply filters
         if (filters.category) {
             transactions = transactions.filter(t => t.category === filters.category);
         }
@@ -343,38 +310,45 @@ class BudgetManager {
         return transactions.sort((a, b) => b.timestamp - a.timestamp);
     }
 
-    // Check if budget has expired (only for auto-check, not for manual archiving)
+    getRecentTransactions(limit = 5) {
+        if (!this.activeBudget) return [];
+        
+        return [...this.activeBudget.transactions]
+            .sort((a, b) => b.timestamp - a.timestamp)
+            .slice(0, limit);
+    }
+
     checkBudgetExpiry() {
         if (!this.activeBudget) return false;
         
         const today = new Date().toISOString().split('T')[0];
-        if (today > this.activeBudget.endDate) {
-            // Don't auto-archive, just notify
-            return true;
-        }
-        return false;
+        return today > this.activeBudget.endDate;
     }
 
-    // Get archive statistics
     getArchiveStats() {
         const totalSaved = this.archive.reduce((sum, budget) => sum + (budget.savings || 0), 0);
         const totalBudgets = this.archive.length;
         const avgSavings = totalBudgets > 0 ? totalSaved / totalBudgets : 0;
         
+        const completed = this.archive.filter(b => b.status === 'completed').length;
+        const incomplete = this.archive.filter(b => b.status === 'incomplete').length;
+        
         return {
             totalSaved,
             totalBudgets,
-            avgSavings
+            avgSavings,
+            completed,
+            incomplete
         };
     }
 
-    // Get spending report data
     getSpendingReport() {
         if (!this.activeBudget) return null;
         
         const summary = this.getBudgetSummary();
         const categories = this.getCategoryBreakdown();
         const biggestExpense = this.getBiggestExpense();
+        const lrtSavings = this.activeBudget.categories.lrt?.saved || 0;
         
         return {
             budgetName: this.activeBudget.name,
@@ -382,16 +356,19 @@ class BudgetManager {
             summary,
             categories,
             biggestExpense,
-            transactions: this.getAllTransactions()
+            lrtSavings,
+            transactions: this.getAllTransactions(),
+            daysActive: this.getDaysActive(),
+            createdAt: this.activeBudget.createdAt
         };
     }
 
-    // Get current budget info for archive confirmation
     getCurrentBudgetInfo() {
         if (!this.activeBudget) return null;
         
         const summary = this.getBudgetSummary();
         const totalTransactions = this.activeBudget.transactions?.length || 0;
+        const categories = this.getCategoryBreakdown();
         
         return {
             name: this.activeBudget.name,
@@ -401,20 +378,19 @@ class BudgetManager {
             totalSpent: summary.totalSpent,
             remaining: summary.remaining,
             addedMoney: summary.addedMoney,
-            totalTransactions: totalTransactions,
-            daysActive: this.getDaysActive()
+            totalTransactions,
+            daysActive: this.getDaysActive(),
+            categoryCount: categories.length
         };
     }
 
-    // Get days active for current budget
     getDaysActive() {
         if (!this.activeBudget) return 0;
         
         const start = new Date(this.activeBudget.startDate);
         const today = new Date();
         const diffTime = Math.abs(today - start);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        return diffDays;
+        return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     }
 
     // Storage methods
@@ -423,7 +399,8 @@ class BudgetManager {
             localStorage.setItem('budgetData', JSON.stringify({
                 activeBudget: this.activeBudget,
                 archive: this.archive,
-                version: '2.0' // Updated version for new format
+                version: '2.1',
+                lastUpdated: new Date().toISOString()
             }));
         } catch (error) {
             console.error('Error saving to storage:', error);
@@ -438,63 +415,19 @@ class BudgetManager {
                 this.activeBudget = parsed.activeBudget;
                 this.archive = parsed.archive || [];
                 
-                // Initialize missing categories for old data
+                // Initialize missing categories
                 if (this.activeBudget) {
-                    if (!this.activeBudget.categories) {
-                        this.activeBudget.categories = {
-                            transportation: { spent: 0 },
-                            food: { spent: 0 },
-                            lrt: { spent: 0, trips: 0, saved: 0 },
-                            drinks: { spent: 0 },
-                            others: { spent: 0 },
-                            added_money: { spent: 0 }
-                        };
-                    }
-                    
-                    // Ensure all required categories exist
                     const requiredCategories = ['transportation', 'food', 'lrt', 'drinks', 'others', 'added_money'];
                     requiredCategories.forEach(cat => {
                         if (!this.activeBudget.categories[cat]) {
-                            this.activeBudget.categories[cat] = { spent: 0 };
+                            this.activeBudget.categories[cat] = { spent: 0, count: 0 };
                         }
                         if (cat === 'lrt') {
-                            if (typeof this.activeBudget.categories.lrt.saved === 'undefined') {
-                                this.activeBudget.categories.lrt.saved = 0;
-                            }
-                            if (typeof this.activeBudget.categories.lrt.trips === 'undefined') {
-                                this.activeBudget.categories.lrt.trips = 0;
-                            }
-                        }
-                    });
-                    
-                    // Remove old budget field if exists (migration from v1.0)
-                    Object.values(this.activeBudget.categories).forEach(cat => {
-                        if (cat.budget !== undefined) {
-                            delete cat.budget;
+                            this.activeBudget.categories.lrt.saved = this.activeBudget.categories.lrt.saved || 0;
+                            this.activeBudget.categories.lrt.trips = this.activeBudget.categories.lrt.trips || 0;
                         }
                     });
                 }
-                
-                // Migrate archive data
-                this.archive.forEach(budget => {
-                    if (!budget.categories) {
-                        budget.categories = {
-                            transportation: { spent: 0 },
-                            food: { spent: 0 },
-                            lrt: { spent: 0, trips: 0, saved: 0 },
-                            drinks: { spent: 0 },
-                            others: { spent: 0 },
-                            added_money: { spent: 0 }
-                        };
-                    }
-                    
-                    // Remove old budget field from archived budgets
-                    Object.values(budget.categories).forEach(cat => {
-                        if (cat.budget !== undefined) {
-                            delete cat.budget;
-                        }
-                    });
-                });
             }
         } catch (error) {
             console.error('Error loading from storage:', error);
@@ -503,65 +436,36 @@ class BudgetManager {
         }
     }
 
-    // Get recent transactions
-    getRecentTransactions(limit = 5) {
-        if (!this.activeBudget) return [];
-        
-        return [...this.activeBudget.transactions]
-            .sort((a, b) => b.timestamp - a.timestamp)
-            .slice(0, limit);
-    }
-
-    // Export data
     exportData() {
         return JSON.stringify({
             activeBudget: this.activeBudget,
             archive: this.archive,
             exportDate: new Date().toISOString(),
-            version: '2.0'
+            version: '2.1',
+            app: 'Budget Tracker Mobile'
         }, null, 2);
     }
 
-    // Import data
     importData(data) {
         try {
             const parsed = JSON.parse(data);
             
-            // Validate data structure
             if (!parsed.activeBudget && !parsed.archive) {
                 throw new Error('Invalid data format');
             }
             
-            // Clear current data
             this.activeBudget = null;
             this.archive = [];
             
-            // Import data
             this.activeBudget = parsed.activeBudget;
             this.archive = parsed.archive || [];
             
             // Ensure categories structure
             if (this.activeBudget) {
-                if (!this.activeBudget.categories) {
-                    this.activeBudget.categories = {
-                        transportation: { spent: 0 },
-                        food: { spent: 0 },
-                        lrt: { spent: 0, trips: 0, saved: 0 },
-                        drinks: { spent: 0 },
-                        others: { spent: 0 },
-                        added_money: { spent: 0 }
-                    };
-                }
-                
-                // Ensure others category exists
-                if (!this.activeBudget.categories.others) {
-                    this.activeBudget.categories.others = { spent: 0 };
-                }
-                
-                // Remove old budget field if exists
-                Object.values(this.activeBudget.categories).forEach(cat => {
-                    if (cat.budget !== undefined) {
-                        delete cat.budget;
+                const requiredCategories = ['transportation', 'food', 'lrt', 'drinks', 'others', 'added_money'];
+                requiredCategories.forEach(cat => {
+                    if (!this.activeBudget.categories[cat]) {
+                        this.activeBudget.categories[cat] = { spent: 0, count: 0 };
                     }
                 });
             }
@@ -570,8 +474,7 @@ class BudgetManager {
             return true;
         } catch (error) {
             console.error('Error importing data:', error);
-            alert(`Error importing data: ${error.message}`);
-            return false;
+            throw error;
         }
     }
 }
