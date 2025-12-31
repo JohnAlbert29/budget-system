@@ -128,6 +128,9 @@
                 <div class="screen-header">
                     <button class="back-btn" data-target="dashboard">← Back</button>
                     <h2>Budget Archive</h2>
+                    <div class="header-actions">
+                        <button id="manageArchiveBtn" class="btn-secondary">Manage Archive</button>
+                    </div>
                 </div>
                 <div id="fullArchive" class="archive-list detailed">
                     <!-- Filled by JavaScript -->
@@ -333,6 +336,77 @@
                 <div class="modal-actions">
                     <button id="confirmArchiveBtn" class="btn-primary">Yes, Archive & Create New</button>
                     <button id="cancelArchiveBtn" class="btn-secondary">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Archive Title Modal -->
+        <div id="editArchiveModal" class="modal">
+            <div class="modal-header">
+                <h3>Edit Archive Title</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editArchiveId">
+                <div class="form-group">
+                    <label>Archive Title</label>
+                    <input type="text" id="editArchiveTitle" placeholder="Enter new title">
+                </div>
+                <div class="archive-info">
+                    <p><strong>Period:</strong> <span id="editArchivePeriod"></span></p>
+                    <p><strong>Total Budget:</strong> <span id="editArchiveTotalBudget"></span></p>
+                    <p><strong>Total Spent:</strong> <span id="editArchiveTotalSpent"></span></p>
+                    <p><strong>Saved:</strong> <span id="editArchiveSaved"></span></p>
+                </div>
+                <div class="modal-actions">
+                    <button id="saveArchiveTitleBtn" class="btn-primary">Save Title</button>
+                    <button class="btn-secondary close-modal">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Archive Confirmation Modal -->
+        <div id="deleteArchiveModal" class="modal">
+            <div class="modal-header">
+                <h3>Delete Archive</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="deleteArchiveId">
+                <div class="warning-message">
+                    ⚠️ <strong>Warning:</strong> This action cannot be undone!
+                </div>
+                <div class="form-group">
+                    <p>Are you sure you want to delete this archived budget?</p>
+                    <div class="archive-info">
+                        <p><strong>Budget:</strong> <span id="deleteArchiveName"></span></p>
+                        <p><strong>Period:</strong> <span id="deleteArchivePeriod"></span></p>
+                        <p><strong>Total Transactions:</strong> <span id="deleteArchiveTransactions"></span></p>
+                        <p><strong>Total Spent:</strong> <span id="deleteArchiveTotalSpent"></span></p>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button id="confirmDeleteArchiveBtn" class="btn-danger">Yes, Delete Permanently</button>
+                    <button class="btn-secondary close-modal">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Manage Archive Modal -->
+        <div id="manageArchiveModal" class="modal">
+            <div class="modal-header">
+                <h3>Manage Archive</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <p>Select an archive to edit or delete:</p>
+                    <div id="archiveList" class="archive-select-list">
+                        <!-- Archive items will be populated here -->
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-secondary close-modal">Close</button>
                 </div>
             </div>
         </div>

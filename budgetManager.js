@@ -54,7 +54,8 @@ class BudgetManager {
             totalSpent: totalSpent,
             savings: remaining,
             archivedAt: new Date().toISOString(),
-            status: today < budgetEndDate ? 'incomplete' : 'completed'
+            status: today < budgetEndDate ? 'incomplete' : 'completed',
+            originalName: this.activeBudget.name // Store original name
         };
         
         // Add to archive at the beginning (most recent first)
@@ -417,13 +418,69 @@ class BudgetManager {
         return diffDays;
     }
 
+    // =========== ARCHIVE MANAGEMENT METHODS ===========
+    
+    // Edit archive title
+    editArchiveTitle(archiveId, newTitle) {
+        const archiveIndex = this.archive.findIndex(b => b.id === archiveId);
+        
+        if (archiveIndex === -1) return false;
+        
+        // Keep original name if not already stored
+        if (!this.archive[archiveIndex].originalName) {
+            this.archive[archiveIndex].originalName = this.archive[archiveIndex].name;
+        }
+        
+        // Update the name
+        this.archive[archiveIndex].name = newTitle.trim();
+        this.archive[archiveIndex].updatedAt = new Date().toISOString();
+        
+        this.saveToStorage();
+        return true;
+    }
+    
+    // Delete archive
+    deleteArchive(archiveId) {
+        const archiveIndex = this.archive.findIndex(b => b.id === archiveId);
+        
+        if (archiveIndex === -1) return false;
+        
+        // Remove from archive
+        this.archive.splice(archiveIndex, 1);
+        this.saveToStorage();
+        return true;
+    }
+    
+    // Get archive by ID
+    getArchiveById(archiveId) {
+        return this.archive.find(b => b.id === archiveId) || null;
+    }
+    
+    // Get all archives for management
+    getAllArchives() {
+        return [...this.archive].map(budget => ({
+            id: budget.id,
+            name: budget.name,
+            originalName: budget.originalName || budget.name,
+            startDate: budget.startDate,
+            endDate: budget.endDate,
+            totalBudget: budget.totalBudget,
+            totalSpent: budget.totalSpent || 0,
+            savings: budget.savings || 0,
+            status: budget.status || 'completed',
+            archivedAt: budget.archivedAt,
+            updatedAt: budget.updatedAt,
+            transactions: budget.transactions?.length || 0
+        }));
+    }
+
     // Storage methods
     saveToStorage() {
         try {
             localStorage.setItem('budgetData', JSON.stringify({
                 activeBudget: this.activeBudget,
                 archive: this.archive,
-                version: '2.0' // Updated version for new format
+                version: '2.1' // Updated version for archive management
             }));
         } catch (error) {
             console.error('Error saving to storage:', error);
@@ -488,6 +545,11 @@ class BudgetManager {
                         };
                     }
                     
+                    // Store original name if not exists
+                    if (!budget.originalName) {
+                        budget.originalName = budget.name;
+                    }
+                    
                     // Remove old budget field from archived budgets
                     Object.values(budget.categories).forEach(cat => {
                         if (cat.budget !== undefined) {
@@ -518,7 +580,7 @@ class BudgetManager {
             activeBudget: this.activeBudget,
             archive: this.archive,
             exportDate: new Date().toISOString(),
-            version: '2.0'
+            version: '2.1'
         }, null, 2);
     }
 
